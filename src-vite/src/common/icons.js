@@ -67,6 +67,8 @@ export { default as IconMapDefault } from '@/assets/icons/map-default.svg';
 export { default as IconMapOff } from '@/assets/icons/map-off.svg';
 export { default as IconMapSatellite } from '@/assets/icons/map-satellite.svg';
 export { default as IconMapCenter } from '@/assets/icons/map-center.svg';
+export { default as IconMapSizeExpand } from '@/assets/icons/map-size-expand.svg';
+export { default as IconMapSizeRestore } from '@/assets/icons/map-size-restore.svg';
 export { default as IconLock } from '@/assets/icons/lock.svg';
 export { default as IconUnlock } from '@/assets/icons/unlock.svg';
 export { default as IconLeftPaneOn } from '@/assets/icons/left-pane-on.svg';

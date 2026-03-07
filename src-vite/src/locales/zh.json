@@ -158,7 +158,7 @@
       "placeholder": "搜索文件名"
     },
     "filter": {
-      "select_mode": "选择项",
+      "select_mode": "多选模式",
       "select_count": "已选择 {count}",
       "sort_type_options": [
         "时间",
@@ -198,6 +198,7 @@
       "调整"
     ],
     "select_hint": "点击项目以选择或取消选择。按住 ⇧ Shift 键可选择范围。",
+    "select_limit_hint": "全选仅会选择前 {count} 个文件。",
     "edit_disabled": "请选择单个图片进行编辑",
     "type_image": "张图片",
     "type_images": "张图片",
@@ -613,10 +614,13 @@
     }
   },
   "file_info": {
-    "title": "文件信息",
+    "title": "信息",
+    "general": "常规",
     "metadata": "元数据",
     "location": "地点",
     "map": "地图",
+    "map_expand": "最大化地图",
+    "map_restore": "还原地图",
     "album_name": "相册",
     "name": "文件名",
     "folder": "文件夹",

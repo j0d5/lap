@@ -1,9 +1,11 @@
 <template>
   <div class="w-full h-full rounded-box bg-base-200 flex flex-col overflow-hidden">
-    <!-- Tabs & Close -->
+    <!-- Header & Close -->
     <div class="flex items-center w-full shrink-0 px-2 mb-2">
-      <div role="tablist" class="tabs tabs-sm tabs-border flex-1">
-        <a role="tab" class="tab tab-active mx-1">{{ $t('info_panel.tabs[0]') }}</a>
+      <div class="flex-1 pl-1">
+        <span class="text-[11px] font-bold uppercase tracking-[0.22em] text-base-content/35">
+          {{ $t('file_info.title') }}
+        </span>
       </div>
       <div class="mt-2 flex items-center gap-1">
         <TButton
@@ -35,12 +37,12 @@
       <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
 
         <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content transition-all duration-200 ease-in-out" 
-          @click.stop="config.infoPanel.showBasicInfo = !config.infoPanel.showBasicInfo"
+          @click.stop="toggleBasicInfo"
         >
           <IconFile class="w-4 h-4" />
-          <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.title') }}</span>
+          <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.general') }}</span>
           <TButton
-            :icon="config.infoPanel.showBasicInfo ? IconArrowUp : IconArrowDown"
+            :icon="showBasicInfoPanel ? IconArrowUp : IconArrowDown"
             :buttonSize="'small'"
           />
         </div>
@@ -51,7 +53,7 @@
           @after-enter="onAfterEnter"
           @leave="onLeave"
         >
-          <div v-if="config.infoPanel.showBasicInfo" class="grid grid-cols-[80px_1fr] gap-y-3 gap-x-4 text-xs overflow-hidden">
+          <div v-if="showBasicInfoPanel" class="grid grid-cols-[80px_1fr] gap-y-3 gap-x-4 text-xs overflow-hidden">
             <!-- Name -->
             <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25 py-1">{{ $t('file_info.name') }}</div>
             <div class="flex items-center">
@@ -167,11 +169,11 @@
       <!-- Metadata Section -->
       <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
 
-        <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content" @click.stop="config.infoPanel.showMetadata = !config.infoPanel.showMetadata">
+        <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content" @click.stop="toggleMetadata">
           <IconCameraAperture class="w-4 h-4 " /> 
           <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.metadata') }}</span>
           <TButton
-            :icon="config.infoPanel.showMetadata ? IconArrowUp : IconArrowDown"
+            :icon="showMetadataPanel ? IconArrowUp : IconArrowDown"
             :buttonSize="'small'"
           />
         </div>
@@ -182,7 +184,7 @@
           @after-enter="onAfterEnter"
           @leave="onLeave"
         >
-          <div v-if="config.infoPanel.showMetadata" class="grid grid-cols-[80px_1fr] gap-y-3 gap-x-4 text-xs overflow-hidden">
+          <div v-if="showMetadataPanel" class="grid grid-cols-[80px_1fr] gap-y-3 gap-x-4 text-xs overflow-hidden">
             <!-- Camera -->
             <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25">{{ $t('file_info.camera') }}</div>
             <div class="text-xs font-semibold text-base-content/65">{{ formatCameraInfo(fileInfo?.e_make, fileInfo?.e_model) }}</div>
@@ -225,12 +227,19 @@
       <!-- Map View -->
       <div v-if="fileInfo?.gps_latitude && fileInfo?.gps_longitude" 
         class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm flex flex-col transition-[flex-grow]" 
-        :class="{ 'flex-1 min-h-[300px]': config.infoPanel.showMap }">
-        <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content shrink-0" @click.stop="config.infoPanel.showMap = !config.infoPanel.showMap">
+        :class="{ 'flex-1 min-h-[300px]': showMapPanel }">
+        <div class="flex items-center gap-2 cursor-pointer text-base-content/70 hover:text-base-content shrink-0" @click.stop="toggleMapPanel">
           <IconLocation class="w-4 h-4 " /> 
           <span class="font-bold mr-auto uppercase text-xs tracking-wide">{{ $t('file_info.map') }}</span>
           <TButton
-            :icon="config.infoPanel.showMap ? IconArrowUp : IconArrowDown"
+            v-if="showMapPanel"
+            :icon="isMapExpanded ? IconMapSizeRestore : IconMapSizeExpand"
+            :tooltip="isMapExpanded ? $t('file_info.map_restore') : $t('file_info.map_expand')"
+            :buttonSize="'small'"
+            @click.stop="toggleMapExpand"
+          />
+          <TButton
+            :icon="showMapPanel ? IconArrowUp : IconArrowDown"
             :buttonSize="'small'"
           />
         </div>
@@ -241,8 +250,8 @@
           @after-enter="onAfterEnter"
           @leave="onLeave"
         >
-          <div v-if="config.infoPanel.showMap" class="overflow-hidden flex-1 flex flex-col min-h-0">
-            <div class="w-full rounded-box overflow-hidden relative z-0 flex-1 min-h-[200px] border border-base-content/5">
+          <div v-if="showMapPanel" class="overflow-hidden flex-1 flex flex-col min-h-0">
+            <div class="w-full rounded-box overflow-hidden relative z-0 flex-1 min-h-[220px] border border-base-content/5">
               <MapView
                 :lat="fileInfo.gps_latitude ? Number(fileInfo.gps_latitude) : 0"
                 :lon="fileInfo.gps_longitude ? Number(fileInfo.gps_longitude) : 0"
@@ -280,6 +289,7 @@ import {
 import { 
   IconClose, IconLocation, IconArrowDown, IconArrowUp, IconCameraAperture, 
   IconFile, IconHeart, IconHeartFilled, IconStar, IconStarFilled, IconEdit,
+  IconMapSizeExpand, IconMapSizeRestore,
 } from '@/common/icons';
 import TButton from '@/components/TButton.vue';
 import ToolTip from '@/components/ToolTip.vue';
@@ -307,6 +317,40 @@ const emit = defineEmits([
 ]);
 
 const toolTipRef = ref<InstanceType<typeof ToolTip> | null>(null);
+const isMapExpanded = ref(false);
+const showBasicInfoPanel = computed(() => !isMapExpanded.value && config.infoPanel.showBasicInfo);
+const showMetadataPanel = computed(() => !isMapExpanded.value && config.infoPanel.showMetadata);
+const showMapPanel = computed(() => isMapExpanded.value || config.infoPanel.showMap);
+
+function toggleMapExpand() {
+  if (!isMapExpanded.value) {
+    config.infoPanel.showBasicInfo = false;
+    config.infoPanel.showMetadata = false;
+    config.infoPanel.showMap = true;
+    isMapExpanded.value = true;
+    return;
+  }
+
+  config.infoPanel.showBasicInfo = true;
+  config.infoPanel.showMetadata = true;
+  config.infoPanel.showMap = true;
+  isMapExpanded.value = false;
+}
+
+function toggleBasicInfo() {
+  config.infoPanel.showBasicInfo = !config.infoPanel.showBasicInfo;
+}
+
+function toggleMetadata() {
+  config.infoPanel.showMetadata = !config.infoPanel.showMetadata;
+}
+
+function toggleMapPanel() {
+  if (isMapExpanded.value) {
+    isMapExpanded.value = false;
+  }
+  config.infoPanel.showMap = !config.infoPanel.showMap;
+}
 
 function getRatingLabel(rating: number) {
   const keys: Record<number, string> = {

@@ -46,6 +46,9 @@
             {{ $t('menu.select.invert') }}
           </button>
         </div>
+        <div v-if="showSelectionLimitHint" class="pt-0.5 text-xs font-medium leading-relaxed text-warning">
+          {{ $t('info_panel.select_limit_hint', { count: selectionLimit }) }}
+        </div>
         <div class="border-t border-base-content/10"></div>
 
         <div v-if="selectedFiles.length === 0" class="p-4 text-center text-base-content/40 space-y-3">
@@ -177,6 +180,14 @@ const props = defineProps({
   selectedSize: {
     type: Number,
     default: 0,
+  },
+  selectionLimit: {
+    type: Number,
+    default: 400,
+  },
+  showSelectionLimitHint: {
+    type: Boolean,
+    default: false,
   },
 });
 

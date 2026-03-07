@@ -617,6 +617,8 @@
     "metadata": "Metadatos",
     "location": "Ubicación",
     "map": "Mapa",
+    "map_expand": "Maximizar mapa",
+    "map_restore": "Restaurar mapa",
     "album_name": "Álbum",
     "name": "Nombre",
     "folder": "Carpeta",

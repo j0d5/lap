@@ -126,7 +126,7 @@
           <IconSeparator class="t-icon-size text-base-content/30" />
           <!-- toggle select mode -->
           <TButton
-            :icon="IconChecked"
+            :icon="IconCheckAll"
             :tooltip="$t('toolbar.filter.select_mode')"
             :selected="selectMode"
             :disabled="fileList.length === 0 || showQuickView || isIndexing"
@@ -266,7 +266,7 @@
             :markers="timelineData"
             :selectedIndex="selectedItemIndex"
             @update:modelValue="handleScrollUpdate"
-            @select-item="handleItemClicked"
+            @select-item="handleTimelineSelectItem"
           ></ScrollBar>
         </div>
 
@@ -348,6 +348,8 @@
             :selected-files="selectedFiles"
             :selected-count="selectedCount"
             :selected-size="selectedSize"
+            :selection-limit="selectionMaxFiles"
+            :show-selection-limit-hint="showSelectionLimitHint"
             @close="handleSelectMode(false)"
             @select-all="selectAllInCurrentList"
             @select-none="selectNoneInCurrentList"
@@ -711,7 +713,13 @@ const selectedItemIndex = ref(-1);
 const selectMode = ref(false);
 const selectedCount = ref(0);
 const selectedSize = ref(0);  // selected files size
-const selectedFiles = computed(() => selectMode.value ? fileList.value.filter(f => f.isSelected) : []);
+const showSelectionLimitHint = ref(false);
+const selectionChunkSize = computed(() => Number(config.main?.selectionChunkSize) || 200);
+const selectionMaxFiles = computed(() => Number(config.main?.selectionMaxFiles) || 400);
+const isRealFileItem = (item: any) => !!item && !item.isPlaceholder && typeof item.id === 'number';
+const getActionableSelectedItems = () =>
+  fileList.value.filter(item => item.isSelected && isRealFileItem(item));
+const selectedFiles = computed(() => selectMode.value ? getActionableSelectedItems() : []);
 
 // quick view
 const showQuickView = ref(false);
@@ -1070,6 +1078,15 @@ function handleItemSelectToggled(index: number, shiftKey: boolean = false) {
   
   // Update last selected index
   lastSelectedIndex.value = index;
+}
+
+function handleTimelineSelectItem(index: number) {
+  if (index < 0 || index >= fileList.value.length) return;
+  if (index === selectedItemIndex.value) return;
+
+  checkUnsavedChanges(() => {
+    selectedItemIndex.value = index;
+  });
 }
 
 function clickRename() {
@@ -1774,8 +1791,9 @@ watch(() => selectedItemIndex.value, (newIndex, oldIndex) => {
 watch(
   () => fileList.value.map(file => ({ isSelected: file.isSelected, size: file.size })),
   () => {
-    selectedCount.value = fileList.value.filter(f => f.isSelected).length;
-    selectedSize.value = fileList.value.reduce((total, f) => total + (f.isSelected ? f.size : 0), 0);
+    const selectedItems = getActionableSelectedItems();
+    selectedCount.value = selectedItems.length;
+    selectedSize.value = selectedItems.reduce((total, item) => total + (item.size || 0), 0);
   }
 );
 
@@ -1810,7 +1828,7 @@ async function fetchDataRange(start: number, end: number) {
   if (start >= end) return;
 
   // Fetch in chunks
-  const chunkSize = 200;
+  const chunkSize = selectionChunkSize.value;
   const startChunk = Math.floor(start / chunkSize);
   const endChunk = Math.floor((end - 1) / chunkSize);
 
@@ -1877,6 +1895,40 @@ async function fetchDataRange(start: number, end: number) {
     } else {
         // console.log(`Chunk already loaded or invalid: ${chunkStart}`);
     }
+  }
+}
+
+async function hydrateRangeForSelection(targetCount: number) {
+  if (fileList.value.length === 0 || targetCount <= 0) return;
+  const requestId = currentContentRequestId;
+  const chunkSize = selectionChunkSize.value;
+  const cappedTarget = Math.min(targetCount, fileList.value.length);
+  isProcessing.value = true;
+
+  try {
+    for (let chunkStart = 0; chunkStart < cappedTarget; chunkStart += chunkSize) {
+      if (requestId !== currentContentRequestId) break;
+      if (!fileList.value[chunkStart]?.isPlaceholder) continue;
+
+      const loadedFiles = await getQueryFiles(currentQueryParams.value, chunkStart, chunkSize);
+      if (!loadedFiles || loadedFiles.length === 0) continue;
+
+      for (let i = 0; i < loadedFiles.length; i++) {
+        const targetIndex = chunkStart + i;
+        if (targetIndex >= fileList.value.length || targetIndex >= cappedTarget) break;
+        const existingItem = fileList.value[targetIndex];
+        fileList.value[targetIndex] = {
+          ...loadedFiles[i],
+          isSelected: Boolean(existingItem?.isSelected),
+          rotate: existingItem?.rotate || loadedFiles[i].rotate || 0,
+        };
+      }
+    }
+  } catch (err) {
+    console.error('hydrateRangeForSelection error:', err);
+  } finally {
+    isProcessing.value = false;
+    layoutVersion.value++;
   }
 }
 
@@ -2614,8 +2666,7 @@ const onRenameFile = async (newName: string) => {
 
 const onMoveTo = async () => {
   if (selectMode.value && selectedCount.value > 0) {    // multi-select mode
-    const moves = fileList.value
-      .filter(item => item.isSelected)
+    const moves = getActionableSelectedItems()
       .map(async item => {
         const movedFile = await moveFile(item.id, item.file_path, libConfig.destFolder.folderId, libConfig.destFolder.folderPath);
         if(movedFile) {
@@ -2639,8 +2690,7 @@ const onMoveTo = async () => {
 
 const onCopyTo = async () => {
   if (selectMode.value && selectedCount.value > 0) {    // multi-select mode
-    const copies = fileList.value
-      .filter(item => item.isSelected)
+    const copies = getActionableSelectedItems()
       .map(async item => {
         const copiedFile = await copyFile(item.file_path, libConfig.destFolder.folderPath);
         if(copiedFile) {
@@ -2679,7 +2729,7 @@ const onTrashFile = async () => {
     }
   }
   else if (selectMode.value && selectedCount.value > 0) {     // multi-select mode
-    const selectedItems = fileList.value.filter(item => item.isSelected);
+    const selectedItems = getActionableSelectedItems();
     deletedFileIds.push(...selectedItems.map(item => item.id));
     const deletes = selectedItems
       .map(async item => {
@@ -2820,8 +2870,7 @@ const toggleFavorite = async () => {
 // set selected files' favorite status (selectMode = true)
 const selectModeSetFavorites = async (isFavorite: boolean) => {
   if (selectMode.value && selectedCount.value > 0) {
-    const updates = fileList.value
-      .filter(item => item.isSelected)
+    const updates = getActionableSelectedItems()
       .map(async item => {
         item.is_favorite = isFavorite;
         // update the favorite status in the database
@@ -2844,8 +2893,7 @@ const setSelectedFileRating = async (rating: number) => {
 const selectModeSetRatings = async (rating: number) => {
   if (selectMode.value && selectedCount.value > 0) {
     const normalized = Math.max(0, Math.min(5, rating));
-    const updates = fileList.value
-      .filter(item => item.isSelected)
+    const updates = getActionableSelectedItems()
       .map(async item => {
         item.rating = normalized;
         return setFileRating(item.id, normalized);
@@ -2953,9 +3001,7 @@ const clickRotate = async () => {
 const clickTag = async () => {
   console.log('clickTag');
   if (selectMode.value) {
-    fileIdsToTag.value = fileList.value
-      .filter(file => file.isSelected)
-      .map(file => file.id);
+    fileIdsToTag.value = getActionableSelectedItems().map(file => file.id);
   } else if (selectedItemIndex.value >= 0) {
     fileIdsToTag.value = [fileList.value[selectedItemIndex.value].id];
   } else {
@@ -2983,23 +3029,45 @@ const openCommentEditor = () => {
   }
 }
 
-const selectAllInCurrentList = () => {
+const selectAllInCurrentList = async () => {
+  showSelectionLimitHint.value = false;
+  const isOverLimit = totalFileCount.value > selectionMaxFiles.value;
+  const selectionCap = isOverLimit ? selectionMaxFiles.value : fileList.value.length;
+  await hydrateRangeForSelection(selectionCap);
+
   for (let i = 0; i < fileList.value.length; i++) {
-    fileList.value[i].isSelected = true;
+    fileList.value[i].isSelected = false;
   }
+
+  let selected = 0;
+  for (let i = 0; i < fileList.value.length && selected < selectionCap; i++) {
+    if (!isRealFileItem(fileList.value[i])) continue;
+    fileList.value[i].isSelected = true;
+    selected += 1;
+  }
+  showSelectionLimitHint.value = selected === selectionMaxFiles.value;
   selectMode.value = true;
 };
 
 const selectNoneInCurrentList = () => {
+  showSelectionLimitHint.value = false;
   for (let i = 0; i < fileList.value.length; i++) {
     fileList.value[i].isSelected = false;
   }
   selectMode.value = true;
 };
 
-const invertSelectionInCurrentList = () => {
-  for (let i = 0; i < fileList.value.length; i++) {
+const invertSelectionInCurrentList = async () => {
+  showSelectionLimitHint.value = false;
+  const isOverLimit = totalFileCount.value > selectionMaxFiles.value;
+  const selectionCap = isOverLimit ? selectionMaxFiles.value : fileList.value.length;
+  await hydrateRangeForSelection(selectionCap);
+
+  let processed = 0;
+  for (let i = 0; i < fileList.value.length && processed < selectionCap; i++) {
+    if (!isRealFileItem(fileList.value[i])) continue;
     fileList.value[i].isSelected = !fileList.value[i].isSelected;
+    processed += 1;
   }
   selectMode.value = true;
 };
@@ -3009,6 +3077,7 @@ const handleSelectMode = (value: any) => {
 
   selectMode.value = value;
   if(!selectMode.value) {
+    showSelectionLimitHint.value = false;
     for (let i = 0; i < fileList.value.length; i++) {
       fileList.value[i].isSelected = false;
     }
@@ -3326,12 +3395,8 @@ async function openImageViewer(
   if (typeof options.rightIndex === 'number') {
     rightIndex = options.rightIndex;
   }
+  const compareMode = options.forceSplit === true;
   if (options.forceSplit) {
-    if (!config.imageViewer) {
-      (config as any).imageViewer = { isSplit: true, isSyncViewport: false };
-    } else {
-      config.imageViewer.isSplit = true;
-    }
     if (rightIndex < 0 && fileCount > 0) {
       rightIndex = Math.min(leftIndex + 1, fileCount - 1);
     }
@@ -3349,8 +3414,9 @@ async function openImageViewer(
   if (!imageWindow) {
     if (newViewer) {
       const forceSplitParam = options.forceSplit ? 1 : 0;
+      const compareModeParam = compareMode ? 1 : 0;
       imageWindow = new WebviewWindow(webViewLabel, {
-        url: `/image-viewer?fileId=${leftFileId}&fileIndex=${leftIndex}&fileCount=${fileCount}&rightFileId=${rightFileId}&rightFileIndex=${rightIndex}&forceSplit=${forceSplitParam}&nextFilePath=${encodeURIComponent(leftNextFilePath)}&rightNextFilePath=${encodeURIComponent(rightNextFilePath)}`,
+        url: `/image-viewer?fileId=${leftFileId}&fileIndex=${leftIndex}&fileCount=${fileCount}&rightFileId=${rightFileId}&rightFileIndex=${rightIndex}&forceSplit=${forceSplitParam}&compareMode=${compareModeParam}&nextFilePath=${encodeURIComponent(leftNextFilePath)}&rightNextFilePath=${encodeURIComponent(rightNextFilePath)}`,
         title: 'Image Viewer',
         width: 1200,
         height: 800,
@@ -3388,6 +3454,8 @@ async function openImageViewer(
       nextFilePath: leftNextFilePath,
       pane: 'left',
       resetSplit: newViewer,
+      compareMode: newViewer ? compareMode : undefined,
+      forceSyncViewport: compareMode ? true : undefined,
       forceSplit: options.forceSplit === true ? true : undefined,
       // filePath: encodedFilePath, 
       // nextFilePath: nextEncodedFilePath,

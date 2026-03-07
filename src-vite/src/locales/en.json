@@ -158,7 +158,7 @@
       "placeholder": "Search file name"
     },
     "filter": {
-      "select_mode": "Selection",
+      "select_mode": "Multi-select mode",
       "select_count": "{count} selected",
       "sort_type_options": [
         "Time",
@@ -198,6 +198,7 @@
       "Adjust"
     ],
     "select_hint": "Click an item to select or deselect it. Hold ⇧ Shift to select a range.",
+    "select_limit_hint": "Select all only selects the first {count} files.",
     "edit_disabled": "Select a single image to edit",
     "type_image": "Image",
     "type_images": "Images",
@@ -613,10 +614,13 @@
     }
   },
   "file_info": {
-    "title": "File info",
+    "title": "Information",
+    "general": "General",
     "metadata": "Metadata",
     "location": "Location",
     "map": "Map",
+    "map_expand": "Maximize map",
+    "map_restore": "Restore map",
     "album_name": "Album",
     "name": "File name",
     "folder": "Folder",

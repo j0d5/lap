@@ -617,6 +617,8 @@
     "metadata": "Metadaten",
     "location": "Ort",
     "map": "Karte",
+    "map_expand": "Karte maximieren",
+    "map_restore": "Karte wiederherstellen",
     "album_name": "Album",
     "name": "Name",
     "folder": "Ordner",

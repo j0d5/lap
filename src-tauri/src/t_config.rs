@@ -7,7 +7,9 @@
  */
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::thread;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 // ============================================================================
@@ -215,11 +217,31 @@ pub fn load_app_config() -> Result<AppConfig, String> {
     let config_path = get_config_file_path()?;
 
     if config_path.exists() {
-        let content = fs::read_to_string(&config_path)
-            .map_err(|e| format!("Failed to read config file: {}", e))?;
-        let config: AppConfig = serde_json::from_str(&content)
-            .map_err(|e| format!("Failed to parse config file: {}", e))?;
-        Ok(config)
+        // Retry briefly in case another process is atomically replacing the file.
+        let mut last_err: Option<String> = None;
+        for _ in 0..3 {
+            let content = fs::read_to_string(&config_path)
+                .map_err(|e| format!("Failed to read config file: {}", e))?;
+
+            match serde_json::from_str::<AppConfig>(&content) {
+                Ok(config) => return Ok(config),
+                Err(parse_err) => {
+                    // Handle rare corruption patterns (e.g. concatenated JSON objects)
+                    if let Some(config) = parse_first_json_object::<AppConfig>(&content) {
+                        let _ = save_app_config(&config);
+                        return Ok(config);
+                    }
+
+                    last_err = Some(format!(
+                        "Failed to parse config file: {}",
+                        parse_err
+                    ));
+                    thread::sleep(Duration::from_millis(30));
+                }
+            }
+        }
+
+        Err(last_err.unwrap_or_else(|| "Failed to parse config file".to_string()))
     } else {
         // Create default config
         let config = AppConfig::default();
@@ -233,8 +255,55 @@ pub fn save_app_config(config: &AppConfig) -> Result<(), String> {
     let config_path = get_config_file_path()?;
     let content = serde_json::to_string_pretty(config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
-    fs::write(&config_path, content).map_err(|e| format!("Failed to write config file: {}", e))?;
+    write_atomic(&config_path, &content)
+        .map_err(|e| format!("Failed to write config file: {}", e))?;
     Ok(())
+}
+
+fn parse_first_json_object<T: for<'de> Deserialize<'de>>(content: &str) -> Option<T> {
+    let mut stream = serde_json::Deserializer::from_str(content).into_iter::<T>();
+    match stream.next() {
+        Some(Ok(value)) => Some(value),
+        _ => None,
+    }
+}
+
+fn write_atomic(path: &Path, content: &str) -> Result<(), String> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| "Config path has no parent directory".to_string())?;
+    fs::create_dir_all(parent)
+        .map_err(|e| format!("Failed to create parent directory: {}", e))?;
+
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| format!("Failed to get timestamp: {}", e))?
+        .as_nanos();
+    let tmp_path = parent.join(format!(
+        ".{}.tmp-{}-{}",
+        path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("app-config.json"),
+        std::process::id(),
+        stamp
+    ));
+
+    fs::write(&tmp_path, content).map_err(|e| format!("Failed to write temp file: {}", e))?;
+
+    match fs::rename(&tmp_path, path) {
+        Ok(_) => Ok(()),
+        Err(rename_err) => {
+            // Windows fallback: rename may fail when target exists.
+            if path.exists() {
+                let _ = fs::remove_file(path);
+                if fs::rename(&tmp_path, path).is_ok() {
+                    return Ok(());
+                }
+            }
+            let _ = fs::remove_file(&tmp_path);
+            Err(format!("Failed to atomically replace config file: {}", rename_err))
+        }
+    }
 }
 
 /// Get the database file path for a library

@@ -63,7 +63,13 @@ fn main() {
         .manage(t_dedup::DedupState::default())
         .setup(|_app| {
             // Create the database on startup
-            t_sqlite::create_db().expect("error while creating the database");
+            if let Err(e) = t_sqlite::create_db() {
+                return Err(std::io::Error::other(format!(
+                    "error while creating the database: {}",
+                    e
+                ))
+                .into());
+            }
 
             // Initialize AI Engine
             let app_handle = _app.handle();

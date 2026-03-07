@@ -72,13 +72,13 @@
           :icon="IconZoomOut"
           :disabled="fileIndex < 0 || imageScale <= imageMinScale || isSlideShow || !canInteract"
           :tooltip="$t('image_viewer.toolbar.zoom_out') + ` (${(imageScale * 100).toFixed(0)}%)`"
-          @click="zoomOut"
+          @click="handleZoomOut"
         />
         <TButton
           :icon="IconZoomIn"
           :disabled="fileIndex < 0 || imageScale >= imageMaxScale || isSlideShow || !canInteract"
           :tooltip="$t('image_viewer.toolbar.zoom_in') + ` (${(imageScale * 100).toFixed(0)}%)`"
-          @click="zoomIn" 
+          @click="handleZoomIn" 
         />
         <TButton
           :icon="!isZoomFit ? IconZoomFit : IconZoomActual"
@@ -724,6 +724,22 @@ const handleToggleSlideShow = () => {
   }
   emit('toggle-slide-show');
 }
+
+const handleZoomIn = () => {
+  if (props.toolbarOnly || !mediaRef.value) {
+    emit('item-action', { action: 'zoom-in', index: props.fileIndex });
+    return;
+  }
+  zoomIn();
+};
+
+const handleZoomOut = () => {
+  if (props.toolbarOnly || !mediaRef.value) {
+    emit('item-action', { action: 'zoom-out', index: props.fileIndex });
+    return;
+  }
+  zoomOut();
+};
 
 const handleMessageFromImageViewer = (payload: { message: string }) => {
   if (payload.message === 'prev') {

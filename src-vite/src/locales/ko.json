@@ -617,6 +617,8 @@
     "metadata": "메타데이터",
     "location": "위치",
     "map": "지도",
+    "map_expand": "지도 최대화",
+    "map_restore": "지도 복원",
     "album_name": "앨범",
     "name": "이름",
     "folder": "폴더",

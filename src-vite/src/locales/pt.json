@@ -617,6 +617,8 @@
     "metadata": "Metadados",
     "location": "Localização",
     "map": "Mapa",
+    "map_expand": "Maximizar mapa",
+    "map_restore": "Restaurar mapa",
     "album_name": "Álbum",
     "name": "Nome",
     "folder": "Pasta",

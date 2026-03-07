@@ -8,6 +8,8 @@ export const useConfigStore = defineStore('configStore', {
     main: {
       sidebarIndex: 0,            // toolbar index
       maxLibraryCount: 20,        // max library count
+      selectionChunkSize: 200,    // virtual list fetch chunk size
+      selectionMaxFiles: 400,     // max files selected/processed in one action
     },
 
     content: {

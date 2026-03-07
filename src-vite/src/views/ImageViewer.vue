@@ -315,6 +315,7 @@ const rightIsZoomFit = ref(true);
 const isSplit = ref(false);
 const activePane = ref<'left' | 'right'>('left');
 const isSyncViewport = ref(false);
+const isCompareModeSession = ref(false);
 const syncingPane = ref<'left' | 'right' | ''>('');
 const animateSyncOnce = ref(false);
 
@@ -364,9 +365,15 @@ onMounted(async() => {
   const initialRightFileIndex = Number(urlParams.get('rightFileIndex') || '-1');
   rightNextFilePath.value = decodeURIComponent(urlParams.get('rightNextFilePath') || '');
   const forceSplit = urlParams.get('forceSplit') === '1';
+  isCompareModeSession.value = urlParams.get('compareMode') === '1';
 
   isSplit.value = forceSplit ? true : !!config.imageViewer?.isSplit;
-  isSyncViewport.value = isSplit.value ? !!config.imageViewer?.isSyncViewport : false;
+  if (isCompareModeSession.value) {
+    isSplit.value = true;
+    isSyncViewport.value = true;
+  } else {
+    isSyncViewport.value = isSplit.value ? !!config.imageViewer?.isSyncViewport : false;
+  }
   rightFileId.value = initialRightFileId > 0 ? initialRightFileId : 0;
   rightFileIndex.value = initialRightFileId > 0 ? initialRightFileIndex : -1;
   rightFileInfo.value = null;
@@ -380,8 +387,14 @@ onMounted(async() => {
     }
 
     const pane = event.payload?.pane === 'right' ? 'right' : 'left';
+    if (typeof event.payload?.compareMode === 'boolean') {
+      isCompareModeSession.value = !!event.payload.compareMode;
+    }
     if (typeof event.payload?.forceSplit === 'boolean') {
       isSplit.value = !!event.payload.forceSplit;
+      if (isSplit.value && typeof event.payload?.forceSyncViewport === 'boolean') {
+        isSyncViewport.value = !!event.payload.forceSyncViewport;
+      }
       if (!isSplit.value) {
         rightFileId.value = 0;
         rightFileIndex.value = -1;
@@ -391,8 +404,13 @@ onMounted(async() => {
       }
     }
     if (event.payload?.resetSplit) {
-      isSplit.value = !!config.imageViewer?.isSplit;
-      isSyncViewport.value = isSplit.value ? !!config.imageViewer?.isSyncViewport : false;
+      if (isCompareModeSession.value) {
+        isSplit.value = true;
+        isSyncViewport.value = true;
+      } else {
+        isSplit.value = !!config.imageViewer?.isSplit;
+        isSyncViewport.value = isSplit.value ? !!config.imageViewer?.isSyncViewport : false;
+      }
       if (!isSplit.value) {
         rightFileId.value = 0;
         rightFileIndex.value = -1;
@@ -774,6 +792,14 @@ function ensureRightPaneLoaded() {
 }
 
 watch(() => isSplit.value, (val) => {
+  if (isCompareModeSession.value) {
+    if (!val) {
+      isSyncViewport.value = false;
+    } else {
+      ensureRightPaneLoaded();
+    }
+    return;
+  }
   if (!config.imageViewer) {
     (config as any).imageViewer = { isSplit: false, isSyncViewport: false };
   }
@@ -786,6 +812,7 @@ watch(() => isSplit.value, (val) => {
 });
 
 watch(() => isSyncViewport.value, (val) => {
+  if (isCompareModeSession.value) return;
   if (!config.imageViewer) {
     (config as any).imageViewer = { isSplit: false, isSyncViewport: false };
   }
@@ -1061,6 +1088,15 @@ const handleItemAction = async (payload: { action: string }) => {
     case 'rating-4':
     case 'rating-5':
       await setCurrentFileRating(Number(payload.action.split('-')[1]), pane);
+      break;
+    case 'zoom-in':
+      clickZoomIn(pane);
+      break;
+    case 'zoom-out':
+      clickZoomOut(pane);
+      break;
+    case 'zoom-actual':
+      clickZoomActual(pane);
       break;
     case 'toggle-split':
       toggleSplit();

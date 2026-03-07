@@ -617,6 +617,8 @@
     "metadata": "メタデータ",
     "location": "場所",
     "map": "地図",
+    "map_expand": "地図を最大化",
+    "map_restore": "地図を元に戻す",
     "album_name": "アルバム",
     "name": "ファイル名",
     "folder": "フォルダー",

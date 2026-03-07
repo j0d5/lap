@@ -21,16 +21,16 @@
       </div>
     </div>
 
-    <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden space-y-2 flex flex-col bg-base-200/50">
-      <div v-if="isDedupLoading" class="flex-1 flex items-center justify-center">
-        <div class="text-center text-base-content/40 space-y-3 max-w-[240px]">
+    <div class="mb-2 px-2 flex-1 overflow-y-auto overflow-x-hidden space-y-3 flex flex-col bg-base-200/50">
+      <div v-if="isDedupLoading" class="rounded-box p-4 bg-base-300/30 border border-base-content/5 shadow-sm flex-1 flex items-center justify-center">
+        <div class="text-center text-base-content/40 space-y-3 max-w-[260px]">
           <span class="loading loading-spinner text-primary w-8 h-8 mx-auto"></span>
           <p class="text-xs font-medium">{{ $t('info_panel.dedup.scanning') }}</p>
         </div>
       </div>
 
-      <div v-else-if="duplicateGroups.length === 0" class="flex-1 flex items-center justify-center">
-        <div class="text-center text-base-content/40 space-y-3 max-w-[240px]">
+      <div v-else-if="duplicateGroups.length === 0" class="rounded-box p-4 bg-base-300/30 border border-base-content/5 shadow-sm flex-1 flex items-center justify-center">
+        <div class="text-center text-base-content/40 space-y-3 max-w-[260px]">
           <IconSimilar class="w-8 h-8 mx-auto text-base-content/30" />
           <p class="text-xs font-medium">{{ $t('info_panel.dedup.empty_title') }}</p>
           <p class="text-xs text-base-content/40">{{ $t('info_panel.dedup.empty_desc') }}</p>
@@ -38,36 +38,24 @@
       </div>
 
       <template v-else>
-        <div class="rounded-box p-3 space-y-3 bg-base-300/25 border border-base-content/5">
+        <div class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
           <div class="flex items-center gap-2 text-base-content/70">
             <span class="font-bold uppercase text-xs tracking-wide">{{ $t('info_panel.dedup.groups_title') }}</span>
-            <span class="ml-auto text-xs font-semibold text-base-content/65">
+          </div>
+          <div class="text-xs font-semibold text-base-content/60">
+            <span>
               {{ $t('info_panel.dedup.duplicate_files_summary', { count: totalDuplicateFileCount.toLocaleString(), size: formatFileSize(totalReclaimableBytes) }) }}
             </span>
           </div>
-          <div class="flex flex-wrap items-center gap-1">
-            <button class="btn btn-xs btn-ghost text-base-content/70 hover:text-base-content" @click="selectAllDuplicatesInList">
-              <IconCheckAll class="w-3.5 h-3.5" />
-              {{ $t('menu.select.all') }}
-            </button>
-            <button
-              class="btn btn-xs btn-ghost"
-              :class="selectedDuplicatesCountInList === 0 ? 'text-base-content/30' : 'text-base-content/70 hover:text-base-content'"
-              :disabled="selectedDuplicatesCountInList === 0"
-              @click="clearAllSelectedInList"
-            >
-              <IconCheckNone class="w-3.5 h-3.5" />
-              {{ $t('menu.select.none') }}
-            </button>
-          </div>
-          <div v-if="showGroupLimitHint" class="text-[11px] text-base-content/45">
+          <div v-if="showGroupLimitHint" class="pt-0.5 text-xs font-medium leading-relaxed text-warning">
             {{ $t('info_panel.dedup.group_limit_hint', { count: DEDUP_GROUP_LIMIT }) }}
           </div>
-          <div class="space-y-1 max-h-40 overflow-y-auto overflow-x-hidden pr-1">
+          <div class="border-t border-base-content/10"></div>
+          <div class="space-y-1.5 max-h-44 overflow-y-auto overflow-x-hidden pr-1">
             <button
               v-for="(group, idx) in duplicateGroups"
               :key="group.id"
-              class="w-full flex items-center gap-2 text-left rounded-box p-2 border transition-colors cursor-pointer"
+              class="w-full flex items-center gap-2 text-left rounded-box p-2.5 border transition-colors cursor-pointer"
               :class="selectedGroupId === group.id
                 ? 'border-primary/50 bg-primary/8'
                 : 'border-base-content/8 bg-base-100/30 hover:border-base-content/18 hover:bg-base-100/50'"
@@ -77,14 +65,14 @@
                 <img v-if="group.keepItem?.file?.thumbnail" :src="group.keepItem.file.thumbnail" class="w-full h-full object-cover" />
                 <div v-else class="w-full h-full skeleton"></div>
               </div>
-              <span class="text-xs font-semibold text-base-content/70">{{ $t('info_panel.dedup.group_label', { index: idx + 1 }) }}</span>
-              <span class="text-[11px] text-base-content/50">{{ group.file_count }} {{ $t('info_panel.dedup.items') }}</span>
+              <span class="text-xs font-semibold text-base-content/70 truncate">{{ $t('info_panel.dedup.group_label', { index: idx + 1 }) }}</span>
+              <span class="text-[11px] text-base-content/50 shrink-0">{{ group.file_count }} {{ $t('info_panel.dedup.items') }}</span>
               <span class="ml-auto text-[11px] text-base-content/55">{{ formatFileSize(group.reclaimableBytes) }}</span>
             </button>
           </div>
         </div>
 
-        <div v-if="activeGroup" class="rounded-box p-3 space-y-3 bg-base-300/25 border border-base-content/5">
+        <div v-if="activeGroup" class="rounded-box p-3 space-y-3 bg-base-300/30 border border-base-content/5 shadow-sm">
           <div class="flex items-center gap-2 text-base-content/70">
             <span class="font-bold uppercase text-xs tracking-wide">{{ $t('info_panel.dedup.group_label', { index: activeGroupIndex + 1 }) }}</span>
           </div>
@@ -108,12 +96,13 @@
               {{ isMac ? $t('menu.file.move_to_trash') : $t('menu.file.delete') }}{{ selectedDeleteCount > 0 ? `(${formatFileSize(selectedDeleteBytes)})` : '' }}
             </button>
           </div>
+          <div class="border-t border-base-content/10"></div>
 
-          <div class="space-y-2">
+          <div class="space-y-2.5">
             <button
               v-if="activeGroup.keepItem?.file"
               :key="`keep-${activeGroup.keepItem.file_id}`"
-              class="w-full rounded-box p-2 border text-left transition-colors cursor-pointer"
+              class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
               :class="[
                 selectedFileId === activeGroup.keepItem.file_id
                   ? 'border-primary/50 bg-primary/8'
@@ -143,7 +132,7 @@
             <button
               v-for="item in activeGroup.duplicateItems"
               :key="item.file_id"
-              class="w-full rounded-box p-2 border text-left transition-colors cursor-pointer"
+              class="w-full rounded-box p-2.5 border text-left transition-colors cursor-pointer"
               :class="[
                 (selectedFileId === item.file_id && !isDupSelected(activeGroup.id, item.file_id))
                   ? 'border-primary/50 bg-primary/8'
@@ -269,14 +258,6 @@ const activeGroupIndex = computed(() => {
 });
 
 const showGroupLimitHint = computed(() => totalGroupCount.value > DEDUP_GROUP_LIMIT);
-const selectedDuplicatesCountInList = computed(() =>
-  duplicateGroups.value.reduce((sum, group) => {
-    const set = selectedDupIdsByGroup.value.get(group.id);
-    if (!set || set.size === 0) return sum;
-    return sum + group.duplicateItems.filter((item: any) => set.has(item.file_id)).length;
-  }, 0)
-);
-
 const selectedDeleteCount = computed(() => {
   if (!activeGroup.value) return 0;
   return activeGroup.value.duplicateItems.filter((item: any) => isDupSelected(activeGroup.value.id, item.file_id)).length;
@@ -340,22 +321,6 @@ function selectGroupDuplicates(groupId: number, keepFileId: number) {
   set.clear();
   for (const id of duplicateIds) {
     if (id !== keepFileId) set.add(id);
-  }
-}
-
-function selectAllDuplicatesInList() {
-  for (const group of duplicateGroups.value) {
-    const set = getDupSelectedSet(group.id);
-    set.clear();
-    for (const item of group.duplicateItems) {
-      if (item.file_id > 0) set.add(item.file_id);
-    }
-  }
-}
-
-function clearAllSelectedInList() {
-  for (const key of Array.from(selectedDupIdsByGroup.value.keys())) {
-    selectedDupIdsByGroup.value.get(key)?.clear();
   }
 }
 
