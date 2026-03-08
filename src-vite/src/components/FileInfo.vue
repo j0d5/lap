@@ -318,7 +318,7 @@ import {
   getFileExtension,
   getFolderPath, 
   getFolderName,
-  separator,
+  buildFolderBreadcrumbs,
   formatDimensionText, 
   formatFileSize, 
   formatTimestamp,
@@ -465,42 +465,10 @@ const renameInputRef = ref<HTMLInputElement | null>(null);
 const albumRootPath = ref('');
 let albumRootRequestSeq = 0;
 
-function normalizePathForCompare(path: string): string {
-  if (!path) return '';
-  const unified = separator === '\\'
-    ? path.replace(/\//g, '\\')
-    : path.replace(/\\/g, '/');
-  const trimmed = unified.replace(/[\\/]+$/, '');
-  return separator === '\\' ? trimmed.toLowerCase() : trimmed;
-}
-
-function isWithinRootPath(path: string, rootPath: string): boolean {
-  const normalizedPath = normalizePathForCompare(path);
-  const normalizedRoot = normalizePathForCompare(rootPath);
-  if (!normalizedPath || !normalizedRoot) return false;
-  return normalizedPath === normalizedRoot || normalizedPath.startsWith(`${normalizedRoot}${separator}`);
-}
-
 const folderBreadcrumbs = computed(() => {
   const folderPath = getFolderPath(props.fileInfo?.file_path);
   if (!folderPath) return [];
-
-  const rootPath = albumRootPath.value;
-  if (!rootPath || !isWithinRootPath(folderPath, rootPath)) {
-    return [{ label: getFolderName(folderPath), path: folderPath }];
-  }
-
-  const normalizedRootPath = rootPath.replace(/[\\/]+$/, '');
-  const items: Array<{ label: string; path: string }> = [
-    { label: getFolderName(normalizedRootPath), path: normalizedRootPath }
-  ];
-  const relative = folderPath.slice(normalizedRootPath.length).split(separator).filter(Boolean);
-  let currentPath = normalizedRootPath;
-  for (const segment of relative) {
-    currentPath = `${currentPath}${separator}${segment}`;
-    items.push({ label: segment, path: currentPath });
-  }
-  return items;
+  return buildFolderBreadcrumbs(folderPath, albumRootPath.value, props.fileInfo?.album_name || getFolderName(albumRootPath.value));
 });
 
 watch(

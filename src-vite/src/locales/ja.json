@@ -264,6 +264,7 @@
     },
     "save_image": {
       "success": "画像を保存しました",
+      "save_as_success": "画像を新しいファイルとして保存しました",
       "failed": "画像の保存に失敗しました"
     },
     "update_image": {

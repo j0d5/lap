@@ -172,6 +172,7 @@ fn main() {
             t_cmds::get_file_thumb,
             t_cmds::get_file_info,
             t_cmds::update_file_info,
+            t_cmds::add_file_to_db,
             t_cmds::get_file_image,
             t_cmds::check_file_exists,
             t_cmds::set_file_rotate,

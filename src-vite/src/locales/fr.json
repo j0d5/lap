@@ -264,6 +264,7 @@
     },
     "save_image": {
       "success": "Image enregistrée",
+      "save_as_success": "Image enregistrée comme nouveau fichier",
       "failed": "Échec enregistrement"
     },
     "update_image": {

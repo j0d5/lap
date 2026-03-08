@@ -1030,13 +1030,15 @@ const setEditParams = (overrides: { fileName?: string; destFilePath?: string; ou
 const executeSave = async (overrides: { fileName?: string; destFilePath?: string; outputFormat?: string } = {}) => {
   isProcessing.value = true;
   let success = false;
+  const savedFilePath = overrides.destFilePath || props.fileInfo.file_path;
+  const saveAsNew = savedFilePath !== props.fileInfo.file_path;
   try {
     success = await editImage(setEditParams(overrides));
   } finally {
     isProcessing.value = false;
     if (success) {
       uiStore.updateFileVersion(props.fileInfo.file_path);
-      emit('success');
+      emit('success', { saveAsNew, filePath: savedFilePath });
     } else {
       emit('failed');
     }

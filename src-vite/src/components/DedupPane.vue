@@ -121,9 +121,9 @@
                   <div class="text-xs font-semibold text-base-content/75 truncate">{{ activeGroup.keepItem.file.name }}</div>
                   <div
                     class="text-[11px] text-base-content/50 truncate"
-                    :title="getFolderPath(activeGroup.keepItem.file.file_path)"
+                    :title="formatDedupFolderPath(activeGroup.keepItem.file)"
                   >
-                    {{ getFolderPath(activeGroup.keepItem.file.file_path) }}
+                    {{ formatDedupFolderPath(activeGroup.keepItem.file) }}
                   </div>
                 </div>
               </div>
@@ -143,8 +143,8 @@
                     ? 'border-warning/18 bg-warning/4 hover:border-warning/28 hover:bg-warning/8'
                     : ''),
               ]"
-              @click="onDuplicateItemClick(activeGroup.id, item.file_id)"
-              @dblclick="onDuplicateItemDblClick(activeGroup.id, item.file_id)"
+              @click="handleDuplicateSelection(item.file_id)"
+              @dblclick="handleDuplicateSelection(item.file_id, true)"
             >
               <div class="flex items-center gap-2">
                 <div class="w-10 h-10 rounded-box overflow-hidden bg-base-content/5 border border-base-content/10 shrink-0">
@@ -155,9 +155,9 @@
                   <div class="text-xs font-semibold text-base-content/75 truncate">{{ item.file?.name }}</div>
                   <div
                     class="text-[11px] text-base-content/50 truncate"
-                    :title="getFolderPath(item.file?.file_path)"
+                    :title="formatDedupFolderPath(item.file)"
                   >
-                    {{ getFolderPath(item.file?.file_path) }}
+                    {{ formatDedupFolderPath(item.file) }}
                   </div>
                   <div class="text-[11px] text-base-content/45">
                     {{ formatFileSize(item.file?.size || 0) }}
@@ -186,10 +186,10 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import { formatFileSize, getFolderPath, isMac } from '@/common/utils';
+import { formatFileSize, getFolderName, getFolderPath, formatFolderBreadcrumb, getThumbnailDataUrl, isMac } from '@/common/utils';
 import TButton from '@/components/TButton.vue';
 import { IconCheckAll, IconCheckNone, IconClose, IconSimilar, IconSplitOn, IconTrash, IconRefresh } from '@/common/icons';
-import { dedupStartScan, dedupGetScanStatus, dedupGetOverview, listenDedupScanProgress, dedupListGroups, dedupSetKeep, getFileThumb } from '@/common/api';
+import { dedupStartScan, dedupGetScanStatus, dedupGetOverview, listenDedupScanProgress, dedupListGroups, dedupSetKeep, getAlbum, getFileThumb } from '@/common/api';
 import { config } from '@/common/config';
 
 const dedupPaneGlobalState = ((globalThis as any).__lapDedupPaneState ||= {
@@ -199,10 +199,6 @@ const DEDUP_GROUP_LIMIT = 200;
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
 
 const props = defineProps({
-  fileList: {
-    type: Array as () => any[],
-    default: () => [],
-  },
   selectedFileId: {
     type: Number,
     default: -1,
@@ -234,6 +230,7 @@ const selectedGroupId = ref<number | null>(null);
 const totalGroupCount = ref(0);
 const totalDuplicateFileCount = ref(0);
 const totalReclaimableBytes = ref(0);
+const albumRootPaths = ref<Map<number, string>>(new Map());
 const duplicateGroups = computed(() =>
   rawGroups.value.map((group: any) => {
     const keepItem = (group.items || []).find((i: any) => i.is_keep === 1) || null;
@@ -288,15 +285,11 @@ function toggleDupSelected(groupId: number, fileId: number) {
   else set.add(fileId);
 }
 
-function onDuplicateItemClick(groupId: number, fileId: number) {
-  void groupId;
+function handleDuplicateSelection(fileId: number, preview = false) {
   emit('select-file', fileId);
-}
-
-function onDuplicateItemDblClick(groupId: number, fileId: number) {
-  void groupId;
-  emit('select-file', fileId);
-  emit('preview-file', fileId);
+  if (preview) {
+    emit('preview-file', fileId);
+  }
 }
 
 async function setKeep(groupId: number, fileId: number) {
@@ -337,6 +330,43 @@ function trashSelectedDuplicates(groupId: number, reclaimableBytes: number) {
   emit('trash-selected-duplicates', String(groupId), ids, reclaimableBytes);
 }
 
+function formatDedupFolderPath(file: any): string {
+  const folderPath = getFolderPath(file?.file_path);
+  if (!folderPath) return '';
+
+  const albumId = Number(file?.album_id || 0);
+  const albumRoot = albumId ? albumRootPaths.value.get(albumId) || '' : '';
+  const albumLabel = file?.album_name || (albumRoot ? getFolderName(albumRoot) : '');
+  return formatFolderBreadcrumb(folderPath, albumRoot, albumLabel);
+}
+
+async function hydrateAlbumRootPaths(groups: any[]) {
+  const albumIds = new Set<number>();
+  for (const group of groups || []) {
+    for (const item of Array.isArray(group?.items) ? group.items : []) {
+      const albumId = Number(item?.file?.album_id || 0);
+      if (albumId > 0 && !albumRootPaths.value.has(albumId)) {
+        albumIds.add(albumId);
+      }
+    }
+  }
+
+  if (albumIds.size === 0) return;
+
+  const results = await Promise.all(
+    Array.from(albumIds).map(async (albumId) => ({
+      albumId,
+      album: await getAlbum(albumId),
+    }))
+  );
+
+  for (const { albumId, album } of results) {
+    if (album?.path) {
+      albumRootPaths.value.set(albumId, album.path);
+    }
+  }
+}
+
 async function hydrateGroupThumbnails(groups: any[]) {
   const tasks: Promise<void>[] = [];
   for (const group of groups || []) {
@@ -358,9 +388,7 @@ async function hydrateGroupThumbnails(groups: any[]) {
           config.settings.thumbnailSize,
           false
         );
-        file.thumbnail = thumb?.thumb_data_base64
-          ? `data:image/jpeg;base64,${thumb.thumb_data_base64}`
-          : thumbnailPlaceholder;
+        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder);
       })());
     }
   }
@@ -383,6 +411,7 @@ async function fetchGroups(preferredGroupId: number | null = null) {
   try {
     const groups = await dedupListGroups(1, DEDUP_GROUP_LIMIT, 'size_desc', 'all');
     const normalized = Array.isArray(groups) ? groups : [];
+    await hydrateAlbumRootPaths(normalized);
     await hydrateGroupThumbnails(normalized);
     rawGroups.value = normalized;
     await refreshOverview();

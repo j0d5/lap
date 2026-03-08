@@ -264,6 +264,7 @@
     },
     "save_image": {
       "success": "Imagem salva",
+      "save_as_success": "Imagem salva como novo arquivo",
       "failed": "Falha ao salvar"
     },
     "update_image": {

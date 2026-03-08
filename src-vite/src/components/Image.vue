@@ -1526,8 +1526,10 @@ defineExpose({
 
 .slideshow-fade-enter-active,
 .slideshow-fade-leave-active {
-  transition: opacity 0.35s ease;
-  will-change: opacity;
+  transition:
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.5s ease;
+  will-change: opacity, filter;
 }
 
 .slideshow-fade-enter-active {
@@ -1538,8 +1540,23 @@ defineExpose({
   z-index: 1;
 }
 
-.slideshow-fade-enter-from,
+.slideshow-fade-enter-from {
+  opacity: 0;
+  filter: brightness(0.88);
+}
+
+.slideshow-fade-enter-to {
+  opacity: 1;
+  filter: brightness(1);
+}
+
+.slideshow-fade-leave-from {
+  opacity: 1;
+  filter: brightness(1);
+}
+
 .slideshow-fade-leave-to {
   opacity: 0;
+  filter: brightness(0.72);
 }
 </style>

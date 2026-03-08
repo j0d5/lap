@@ -686,6 +686,18 @@ export async function updateFileInfo(fileId, filePath) {
   return null;
 }
 
+export async function addFileToDb(folderId, filePath) {
+  try {
+    const result = await invoke('add_file_to_db', { folderId, filePath });
+    if(result) {
+      return result;
+    };
+  } catch (error) {
+    console.log('Failed to add file to db:', error);
+  }
+  return null;
+}
+
 // get file image
 export async function getFileImage(filePath) {
   try {

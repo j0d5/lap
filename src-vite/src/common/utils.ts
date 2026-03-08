@@ -229,8 +229,73 @@ export function getFolderName(path: string): string {
   return path.substring(lastSlashIndex + 1);
 }
 
+export function normalizePathForCompare(path: string): string {
+  if (!path) return '';
+  const unified = separator === '\\'
+    ? path.replace(/\//g, '\\')
+    : path.replace(/\\/g, '/');
+  const trimmed = unified.replace(/[\\/]+$/, '');
+  return separator === '\\' ? trimmed.toLowerCase() : trimmed;
+}
+
+export function isWithinRootPath(path: string, rootPath: string): boolean {
+  const normalizedPath = normalizePathForCompare(path);
+  const normalizedRoot = normalizePathForCompare(rootPath);
+  if (!normalizedPath || !normalizedRoot) return false;
+  return normalizedPath === normalizedRoot || normalizedPath.startsWith(`${normalizedRoot}${separator}`);
+}
+
+export function buildFolderBreadcrumbs(
+  folderPath: string,
+  rootPath = '',
+  rootLabel = ''
+): Array<{ label: string; path: string }> {
+  if (!folderPath) return [];
+
+  if (!rootPath || !isWithinRootPath(folderPath, rootPath)) {
+    return [{ label: getFolderName(folderPath), path: folderPath }];
+  }
+
+  const normalizedRootPath = rootPath.replace(/[\\/]+$/, '');
+  const items: Array<{ label: string; path: string }> = [
+    { label: rootLabel || getFolderName(normalizedRootPath), path: normalizedRootPath }
+  ];
+  const relative = folderPath.slice(normalizedRootPath.length).split(separator).filter(Boolean);
+  let currentPath = normalizedRootPath;
+  for (const segment of relative) {
+    currentPath = `${currentPath}${separator}${segment}`;
+    items.push({ label: segment, path: currentPath });
+  }
+  return items;
+}
+
+export function formatFolderBreadcrumb(
+  folderPath: string,
+  rootPath = '',
+  rootLabel = ''
+): string {
+  return buildFolderBreadcrumbs(folderPath, rootPath, rootLabel)
+    .map(item => item.label)
+    .join(' > ');
+}
+
+export function getThumbnailDataUrl(
+  thumb: { thumb_data_base64?: string | null; thumb_mime_type?: string | null } | null | undefined,
+  placeholder = ''
+): string {
+  if (!thumb?.thumb_data_base64) {
+    return placeholder;
+  }
+  return `data:${thumb.thumb_mime_type || 'image/jpeg'};base64,${thumb.thumb_data_base64}`;
+}
+
 export function getRelativePath(path: string, basePath: string): string {
-  return path.replace(basePath, '').split(separator).join(' > ');;
+  if (!path || !basePath || !isWithinRootPath(path, basePath)) {
+    return '';
+  }
+  const normalizedBasePath = basePath.replace(/[\\/]+$/, '');
+  const relativeParts = path.slice(normalizedBasePath.length).split(separator).filter(Boolean);
+  return relativeParts.join(' > ');
 }
 
 /// extract the name and the extension from a file name

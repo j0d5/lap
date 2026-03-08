@@ -367,7 +367,7 @@
             ref="fileInfoRef"
             :fileInfo="fileList[selectedItemIndex]" 
             @close="checkUnsavedChanges(() => config.rightPanel.show = false)" 
-            @success="onFileSaved(true)"
+            @success="onFileSaved(true, $event)"
             @failed="onFileSaved(false)"
             @toggleFavorite="toggleFavorite"
             @setRating="setSelectedFileRating"
@@ -415,7 +415,7 @@
   <EditImage
     v-if="showEditImage"
     :fileInfo="fileList[selectedItemIndex]" 
-    @success="onFileSaved(true)"
+    @success="onFileSaved(true, $event)"
     @failed="onFileSaved(false)"
     @cancel="showEditImage = false"
   />
@@ -423,7 +423,7 @@
   <AdjustImage
     v-if="showAdjustImage"
     :fileInfo="fileList[selectedItemIndex]"
-    @success="onFileSaved(true)"
+    @success="onFileSaved(true, $event)"
     @failed="onFileSaved(false)"
     @cancel="showAdjustImage = false"
   />
@@ -530,13 +530,13 @@ import { getAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFold
          copyImage, renameFile, moveFile, copyFile, deleteFile, deleteDbFile, editFileComment, getFileThumb, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealFolder, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
-         updateFileInfo, cancelIndexing as cancelIndexingApi, getFacesForFile, listenFaceIndexProgress,
-         dedupGetGroup, getQueryFilePosition } from '@/common/api';  
+         updateFileInfo, addFileToDb, cancelIndexing as cancelIndexingApi, getFacesForFile, listenFaceIndexProgress,
+         dedupGetGroup, dedupDeleteSelected, getQueryFilePosition } from '@/common/api';  
 import { config, libConfig } from '@/common/config';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
 import { isWin, isMac, setTheme, separator,
-         formatFileSize, formatDate, getCalendarDateRange, getRelativePath, 
-         extractFileName, combineFileName, getFolderPath, getFolderName, getSelectOptions, 
+         formatFileSize, formatDate, getCalendarDateRange, formatFolderBreadcrumb, getThumbnailDataUrl,
+         extractFileName, combineFileName, getFolderPath, getSelectOptions, 
          shortenFilename, getSlideShowInterval } from '@/common/utils';
 
 import DropDownSelect from '@/components/DropDownSelect.vue';
@@ -912,6 +912,7 @@ const toolTipRef = ref<any>(null);
 const isProcessing = ref(false);  // show processing status
 const isLoading = ref(false);     // show loading status in GridView (for empty file list)
 const hasLoadedInitialResult = ref(false); // avoid showing "No files found" before first real result returns
+const dedupSourceVersion = ref(0);
 
 const searchBoxRef = ref<any>(null);
 
@@ -950,8 +951,8 @@ const dedupQueryParams = computed(() => {
 });
 
 const dedupScanKey = computed(() => {
-  if (totalFileCount.value <= 0) return '';
-  return `query:${JSON.stringify(dedupQueryParams.value)}|count:${totalFileCount.value}`;
+  if (dedupSourceVersion.value <= 0) return '';
+  return `query:${JSON.stringify(dedupQueryParams.value)}|version:${dedupSourceVersion.value}`;
 });
 
 const currentTitleIcon = computed(() => {
@@ -1249,6 +1250,13 @@ function handleLayoutUpdate({ height }: { height: number }) {
   if (gridViewRef.value) {
     updateScrollPosition(gridViewRef.value.getScrollTop(), 0);
   }
+}
+
+function markDedupSourceUpdated(requestId?: number) {
+  if (requestId !== undefined && requestId !== currentContentRequestId) {
+    return;
+  }
+  dedupSourceVersion.value += 1;
 }
 
 function handleScrollUpdate(newIndex: number) {
@@ -2022,6 +2030,7 @@ async function getFileList(
         name: '',
         size: 0,
       }));
+      markDedupSourceUpdated(requestId);
       if (totalFileCount.value === 0) {
         openImageViewer(0, false, true);
       }
@@ -2030,12 +2039,14 @@ async function getFileList(
       lastVisibleRange = { start: -1, end: -1 };
     } else {
       fileList.value = [];
+      markDedupSourceUpdated(requestId);
       openImageViewer(0, false, true);
     }
   } catch (err) {
     console.error('getFileList error:', err);
     if (requestId === currentContentRequestId) {
       fileList.value = [];
+      markDedupSourceUpdated(requestId);
       openImageViewer(0, false, true);
     }
   } finally {
@@ -2072,10 +2083,13 @@ async function getImageSearchFileList(
     }
     
     searchSimilarImages(currentImageSearchParams.value).then(result => {
+      if (requestId !== currentContentRequestId) return;
+
       if (result) {
         fileList.value = result;
         totalFileCount.value = fileList.value.length;
         totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+        markDedupSourceUpdated(requestId);
         openImageViewer(0, false, true);
 
         // Reset visible range tracking when changing views
@@ -2104,12 +2118,20 @@ async function getImageSearchFileList(
 
         // Fetch thumbnails for the search results
         getFileListThumb(fileList.value);
+      } else {
+        fileList.value = [];
+        totalFileCount.value = 0;
+        totalFileSize.value = 0;
+        markDedupSourceUpdated(requestId);
       }
     });
   } catch (err) {
     console.error('getImageSearchFileList error:', err);
     if (requestId === currentContentRequestId) {
       fileList.value = [];
+      totalFileCount.value = 0;
+      totalFileSize.value = 0;
+      markDedupSourceUpdated(requestId);
     }
   } finally {
     // Only clear loading state if this is still the active request
@@ -2156,7 +2178,7 @@ async function updateContent() {
             getFileList({ searchAllSubfolders: libConfig.album.folderPath }, requestId);
           } else {                        
             // folder is selected, show files in the folder
-          contentTitle.value = getFolderName(album.path) + getRelativePath(libConfig.album.folderPath || "", album.path);
+          contentTitle.value = formatFolderBreadcrumb(libConfig.album.folderPath || "", album.path);
             
             // Get files from file system (not from DB) and generate thumbnails if needed
             const [folderFiles, newCount, updatedCount] = await getFolderFiles(libConfig.album.folderId, libConfig.album.folderPath, false);
@@ -2167,6 +2189,7 @@ async function updateContent() {
             fileList.value = folderFiles || [];
             totalFileCount.value = fileList.value.length;
             totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
+            markDedupSourceUpdated(requestId);
             isLoading.value = false;
             hasLoadedInitialResult.value = true;
             openImageViewer(0, false, true);
@@ -2233,7 +2256,7 @@ async function updateContent() {
         getAlbum(libConfig.favorite.albumId).then(album => {
           if (requestId !== currentContentRequestId) return;
           if(album) {
-            contentTitle.value = getFolderName(album.path) + getRelativePath(libConfig.favorite.folderPath || "", album.path);
+            contentTitle.value = formatFolderBreadcrumb(libConfig.favorite.folderPath || "", album.path);
             getFileList({ searchAllSubfolders: libConfig.favorite.folderPath || "" }, requestId);
           } else {
             contentTitle.value = "";
@@ -2531,7 +2554,7 @@ function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
       if(folderPath === album.path) { // current folder is root
         contentTitle.value = album.name;
       } else {
-        contentTitle.value = getFolderName(album.path) + getRelativePath(folderPath || "", album.path);
+        contentTitle.value = formatFolderBreadcrumb(folderPath || "", album.path);
       };
     }
   });
@@ -2626,11 +2649,20 @@ function handleTitleClick() {
 }
 
 // update file state after a save from either FileInfo or EditImage
-const onFileSaved = (success: boolean) => {
+const onFileSaved = async (success: boolean, payload: SavedFilePayload = {}) => {
   if (success) {
     showEditImage.value = false;
     showAdjustImage.value = false;
-    updateFile(fileList.value[selectedItemIndex.value]);
+    if (payload.saveAsNew && payload.filePath) {
+      const inserted = await indexAndInsertSavedFile(payload.filePath);
+      if (!inserted) {
+        updateContent();
+      }
+      toolTipRef.value.showTip(localeMsg.value.tooltip.save_image.save_as_success || localeMsg.value.tooltip.save_image.success);
+    } else {
+      updateFile(fileList.value[selectedItemIndex.value]);
+      toolTipRef.value.showTip(localeMsg.value.tooltip.save_image.success);
+    }
   } else {
     toolTipRef.value.showTip(localeMsg.value.tooltip.save_image.failed, true);
   }
@@ -2682,7 +2714,6 @@ const onMoveTo = async () => {
         }
       });
     await Promise.all(moves); // parallelize DB updates
-    selectMode.value = false; // exit multi-select mode
   } 
   else if(selectedItemIndex.value >= 0) {               // single select mode
     const file = fileList.value[selectedItemIndex.value];
@@ -2705,7 +2736,6 @@ const onCopyTo = async () => {
         }
       });
     await Promise.all(copies); // parallelize DB updates
-    selectMode.value = false; // exit multi-select mode
   } 
   else if(selectedItemIndex.value >= 0) {               // single select mode
     const file = fileList.value[selectedItemIndex.value];
@@ -2727,12 +2757,18 @@ const onTrashFile = async () => {
 
   if (dedupDeleteFileIds.value.length > 0) {
     const ids = [...dedupDeleteFileIds.value];
-    for (const id of ids) {
-      const index = fileList.value.findIndex(file => file.id === id);
-      if (index === -1) continue;
-      deletedFileIds.push(id);
-      await deleteFileAlways(fileList.value[index]);
-      removeFromFileList(index);
+    const success = await dedupDeleteSelected(null, ids);
+    if (success !== undefined) {
+      deletedFileIds.push(...ids);
+      closeTrashMsgbox();
+      await updateContent();
+      tauriEmit('files-deleted', {
+        source: 'content',
+        fileIds: deletedFileIds,
+        fileCount: fileList.value.length,
+        selectedIndex: selectedItemIndex.value,
+      });
+      return;
     }
   }
   else if (selectMode.value && selectedCount.value > 0) {     // multi-select mode
@@ -2744,7 +2780,6 @@ const onTrashFile = async () => {
         removeFromFileList(fileList.value.indexOf(item));
       });
     await Promise.all(deletes); // parallelize DB updates
-    selectMode.value = false; // exit multi-select mode
   } 
   else if(selectedItemIndex.value >= 0) {               // single select mode
     deletedFileIds.push(fileList.value[selectedItemIndex.value].id);
@@ -2847,7 +2882,7 @@ const updateThumbForFile = async (file: any) => {
   const thumb = await getFileThumb(file.id, file.file_path, file.file_type, file.e_orientation || 0, config.settings.thumbnailSize, true);
   if(thumb) {
     if(thumb.error_code === 0) {
-      file.thumbnail = `data:image/jpeg;base64,${thumb.thumb_data_base64}`;
+      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder);
     } else if(thumb.error_code === 1) {
       file.thumbnail = thumbnailPlaceholder;
     }
@@ -2861,6 +2896,50 @@ const syncFileMetaToImageViewer = async (fileId: number, changes: Record<string,
     fileId,
     changes,
   });
+};
+
+type SavedFilePayload = {
+  saveAsNew?: boolean;
+  filePath?: string;
+};
+
+const insertIndexedFileIntoList = async (indexedFile: any) => {
+  const position = await getQueryFilePosition(currentQueryParams.value, indexedFile.id);
+  if (position === null || position < 0) {
+    return false;
+  }
+
+  const nextFile = {
+    ...indexedFile,
+    isSelected: false,
+    rotate: indexedFile.rotate || 0,
+  };
+
+  totalFileCount.value += 1;
+  totalFileSize.value += nextFile.size || 0;
+  fileList.value.splice(position, 0, nextFile);
+  selectedItemIndex.value = position;
+  markDedupSourceUpdated(currentContentRequestId);
+
+  await nextTick();
+  const insertedFile = fileList.value[position];
+  if (!insertedFile) {
+    return false;
+  }
+  await updateThumbForFile(insertedFile);
+  updateSelectedImage(position);
+  openImageViewer(position, false, true);
+  return true;
+};
+
+const indexAndInsertSavedFile = async (filePath: string) => {
+  const currentFile = fileList.value[selectedItemIndex.value];
+  if (!currentFile?.folder_id) return false;
+
+  const indexedFile = await addFileToDb(currentFile.folder_id, filePath);
+  if (!indexedFile) return false;
+
+  return insertIndexedFileIntoList(indexedFile);
 };
 
 // toggle the selected file's favorite status (selectMode = false)
@@ -3308,7 +3387,7 @@ async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4) 
     
     if(thumb) {
       if(thumb.error_code === 0) {
-        file.thumbnail = `data:image/jpeg;base64,${thumb.thumb_data_base64}`;
+        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder);
       } else if(thumb.error_code === 1) {
         file.thumbnail = thumbnailPlaceholder;
       }

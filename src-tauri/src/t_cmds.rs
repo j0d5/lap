@@ -472,6 +472,15 @@ pub fn update_file_info(file_id: i64, file_path: &str) -> Result<Option<AFile>, 
         .map_err(|e| format!("Error while updating file info: {}", e))
 }
 
+/// add or refresh a file in db and return the indexed file info
+#[tauri::command]
+pub fn add_file_to_db(folder_id: i64, file_path: &str) -> Result<Option<AFile>, String> {
+    let file_type = t_utils::get_file_type(file_path)
+        .ok_or_else(|| format!("Unsupported file type: {}", file_path))?;
+    let (file, _) = AFile::add_to_db(folder_id, file_path, file_type)?;
+    Ok(Some(file))
+}
+
 /// get a file's image
 #[tauri::command]
 pub async fn get_file_image(file_path: String) -> Result<String, String> {
