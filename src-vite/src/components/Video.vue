@@ -491,6 +491,16 @@ const rotateRight = () => {
   rotate.value = (rotate.value + 90) % 360; 
   updateTransform();
 };
+const togglePlay = () => {
+  const player = getActivePlayer();
+  if (!player) return;
+
+  if (isPlaying.value) {
+    player.pause();
+  } else {
+    player.play();
+  }
+};
 
 function getViewportState() {
   return {
@@ -531,6 +541,7 @@ defineExpose({
   zoomOut, 
   zoomActual, 
   rotateRight,
+  togglePlay,
   getViewportState,
   applyViewportState,
   pause: () => {

@@ -208,6 +208,8 @@
     "favorite_all": "Favorito",
     "unfavorite_all": "Quitar",
     "action": "Acción",
+    "file_actions": "Acciones de archivo",
+    "labels_and_display": "Etiquetas y visualización",
     "tag_all": "Etiqueta",
     "dedup": {
       "title": "Duplicados",

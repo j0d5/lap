@@ -208,6 +208,8 @@
     "favorite_all": "Избранное",
     "unfavorite_all": "Убрать",
     "action": "Действие",
+    "file_actions": "Операции с файлами",
+    "labels_and_display": "Метки и отображение",
     "tag_all": "Тег",
     "dedup": {
       "title": "Дубликаты",

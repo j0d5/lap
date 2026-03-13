@@ -208,6 +208,8 @@
     "favorite_all": "Favori",
     "unfavorite_all": "Retirer",
     "action": "Action",
+    "file_actions": "Actions sur les fichiers",
+    "labels_and_display": "Marquages et affichage",
     "tag_all": "Tag",
     "dedup": {
       "title": "Doublons",

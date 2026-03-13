@@ -44,7 +44,7 @@ export const useFileMenuItems = (
       {
         label: localeMsg.value.menu.file.find_similar_images,
         icon: markRaw(IconPhotoSearch),
-        shortcut: isMac ? '⌘S' : 'Ctrl+S',
+        shortcut: isMac ? '⌘F' : 'Ctrl+F',
         disabled: f.file_type !== 1 && f.file_type !== 3,
         action: createAction('search-similar')
       },
@@ -92,7 +92,7 @@ export const useFileMenuItems = (
       {
         label: localeMsg.value.menu.file.rename,
         icon: markRaw(IconRename),
-        shortcut: isMac ? '⌘R' : 'Ctrl+R',
+        shortcut: isMac ? 'Return' : 'F2',
         action: createAction('rename')
       },
       {
@@ -119,7 +119,7 @@ export const useFileMenuItems = (
       {
         label: f.is_favorite ? localeMsg.value.menu.meta.unfavorite : localeMsg.value.menu.meta.favorite,
         icon: markRaw(IconHeart),
-        shortcut: isMac ? '⌘F' : 'Ctrl+F',
+        shortcut: 'F',
         action: createAction('favorite')
       },
       {
@@ -130,56 +130,58 @@ export const useFileMenuItems = (
           {
             label: localeMsg.value.favorite.clear_rating,
             icon: markRaw(IconStar),
+            shortcut: '0',
             action: createAction('rating-0')
           },
           { label: '-', action: null },
           {
-            label: localeMsg.value.favorite.five_stars,
-            icon: markRaw(Number(f.rating || 0) === 5 ? IconStarFilled : IconStar),
-            shortcut: isMac ? '⌘5' : 'Ctrl+5',
-            action: createAction('rating-5')
-          },
-          {
-            label: localeMsg.value.favorite.four_stars,
-            icon: markRaw(Number(f.rating || 0) === 4 ? IconStarFilled : IconStar),
-            shortcut: isMac ? '⌘4' : 'Ctrl+4',
-            action: createAction('rating-4')
-          },
-          {
-            label: localeMsg.value.favorite.three_stars,
-            icon: markRaw(Number(f.rating || 0) === 3 ? IconStarFilled : IconStar),
-            shortcut: isMac ? '⌘3' : 'Ctrl+3',
-            action: createAction('rating-3')
+            label: localeMsg.value.favorite.one_star,
+            icon: markRaw(Number(f.rating || 0) === 1 ? IconStarFilled : IconStar),
+            shortcut: '1',
+            action: createAction('rating-1')
           },
           {
             label: localeMsg.value.favorite.two_stars,
             icon: markRaw(Number(f.rating || 0) === 2 ? IconStarFilled : IconStar),
-            shortcut: isMac ? '⌘2' : 'Ctrl+2',
+            shortcut: '2',
             action: createAction('rating-2')
           },
           {
-            label: localeMsg.value.favorite.one_star,
-            icon: markRaw(Number(f.rating || 0) === 1 ? IconStarFilled : IconStar),
-            shortcut: isMac ? '⌘1' : 'Ctrl+1',
-            action: createAction('rating-1')
+            label: localeMsg.value.favorite.three_stars,
+            icon: markRaw(Number(f.rating || 0) === 3 ? IconStarFilled : IconStar),
+            shortcut: '3',
+            action: createAction('rating-3')
+          },
+          {
+            label: localeMsg.value.favorite.four_stars,
+            icon: markRaw(Number(f.rating || 0) === 4 ? IconStarFilled : IconStar),
+            shortcut: '4',
+            action: createAction('rating-4')
+          },
+          {
+            label: localeMsg.value.favorite.five_stars,
+            icon: markRaw(Number(f.rating || 0) === 5 ? IconStarFilled : IconStar),
+            shortcut: '5',
+            action: createAction('rating-5')
           },
         ]
       },
       {
         label: localeMsg.value.menu.meta.tag,
         icon: markRaw(IconTag),
-        shortcut: isMac ? '⌘T' : 'Ctrl+T',
+        shortcut: 'T',
         action: createAction('tag')
       },
       {
         label: localeMsg.value.menu.meta.comment,
         icon: markRaw(IconComment),
+        shortcut: 'C',
         action: createAction('comment')
       },
       {
         label: localeMsg.value.menu.meta.rotate,
         icon: markRaw(IconRotate),
-        // shortcut: isMac ? '⌘R' : 'Ctrl+R',
+        shortcut: 'R',
         action: createAction('rotate')
       },
     ];

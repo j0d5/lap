@@ -511,37 +511,38 @@ const ratingMenuItems = computed(() => {
     {
       label: localeMsg.value.favorite.clear_rating,
       icon: IconStar,
+      shortcut: '0',
       action: () => emit('item-action', { action: 'rating-0', index: props.fileIndex }),
     },
     { label: '-', action: null },
     {
       label: localeMsg.value.favorite.five_stars,
       icon: rating === 5 ? IconStarFilled : IconStar,
-      shortcut: isMac ? '⌘5' : 'Ctrl+5',
+      shortcut: '5',
       action: () => emit('item-action', { action: 'rating-5', index: props.fileIndex }),
     },
     {
       label: localeMsg.value.favorite.four_stars,
       icon: rating === 4 ? IconStarFilled : IconStar,
-      shortcut: isMac ? '⌘4' : 'Ctrl+4',
+      shortcut: '4',
       action: () => emit('item-action', { action: 'rating-4', index: props.fileIndex }),
     },
     {
       label: localeMsg.value.favorite.three_stars,
       icon: rating === 3 ? IconStarFilled : IconStar,
-      shortcut: isMac ? '⌘3' : 'Ctrl+3',
+      shortcut: '3',
       action: () => emit('item-action', { action: 'rating-3', index: props.fileIndex }),
     },
     {
       label: localeMsg.value.favorite.two_stars,
       icon: rating === 2 ? IconStarFilled : IconStar,
-      shortcut: isMac ? '⌘2' : 'Ctrl+2',
+      shortcut: '2',
       action: () => emit('item-action', { action: 'rating-2', index: props.fileIndex }),
     },
     {
       label: localeMsg.value.favorite.one_star,
       icon: rating === 1 ? IconStarFilled : IconStar,
-      shortcut: isMac ? '⌘1' : 'Ctrl+1',
+      shortcut: '1',
       action: () => emit('item-action', { action: 'rating-1', index: props.fileIndex }),
     },
   ];
@@ -697,6 +698,7 @@ const zoomIn = () => mediaRef.value?.zoomIn();
 const zoomOut = () => mediaRef.value?.zoomOut();
 const zoomActual = () => mediaRef.value?.zoomActual();
 const rotateRight = () => mediaRef.value?.rotateRight();
+const togglePlay = () => mediaRef.value?.togglePlay?.();
 const getViewportState = () => mediaRef.value?.getViewportState?.();
 const applyViewportState = (viewport: any, silent = false) => mediaRef.value?.applyViewportState?.(viewport, silent);
 const showMessage = (message: string, isWarning: boolean = false) => toolTipRef.value?.showTip(message, isWarning);
@@ -754,6 +756,7 @@ defineExpose({
   zoomOut,
   zoomActual,
   rotateRight,
+  togglePlay,
   getViewportState,
   applyViewportState,
   showMessage,

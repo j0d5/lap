@@ -209,6 +209,8 @@
     "favorite_all": "Favorite",
     "unfavorite_all": "Unfavorite",
     "action": "Action",
+    "file_actions": "File Actions",
+    "labels_and_display": "Labels & Display",
     "tag_all": "Tag",
     "dedup": {
       "title": "Duplicates",

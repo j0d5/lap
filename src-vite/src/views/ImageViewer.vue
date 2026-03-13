@@ -531,31 +531,52 @@ function handleKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  // Disable keyboard events during slideshow (except Escape)
-  if (isSlideShow.value && event.key !== 'Escape') {
+  // Disable keyboard events during slideshow except the toggle shortcut.
+  if (isSlideShow.value && event.key !== 'Escape' && event.key.toLowerCase() !== 'p') {
     return;
   }
 
   const isCmdKey = isMac ? event.metaKey : event.ctrlKey;
   const lowerKey = event.key.toLowerCase();
   const ratingShortcut = Number.parseInt(event.key, 10);
+  const hasModifier = event.metaKey || event.ctrlKey || event.altKey;
 
-  if (isCmdKey && lowerKey === 'f') {
-    event.preventDefault();
-    void toggleFavorite(getActiveFilePane());
-    return;
-  }
-
-  if (isCmdKey && lowerKey === 't') {
-    event.preventDefault();
-    clickTag(getActiveFilePane());
-    return;
-  }
-
-  if (isCmdKey && Number.isInteger(ratingShortcut) && ratingShortcut >= 1 && ratingShortcut <= 5) {
+  if (!hasModifier && Number.isInteger(ratingShortcut) && ratingShortcut >= 0 && ratingShortcut <= 5) {
     event.preventDefault();
     void setCurrentFileRating(ratingShortcut, getActiveFilePane());
     return;
+  }
+
+  if (!hasModifier) {
+    if (lowerKey === 'p') {
+      event.preventDefault();
+      clickSlideShow(getActiveFilePane());
+      return;
+    }
+
+    if (lowerKey === 'f') {
+      event.preventDefault();
+      void toggleFavorite(getActiveFilePane());
+      return;
+    }
+
+    if (lowerKey === 't') {
+      event.preventDefault();
+      clickTag(getActiveFilePane());
+      return;
+    }
+
+    if (lowerKey === 'c') {
+      event.preventDefault();
+      openCommentEditor(getActiveFilePane());
+      return;
+    }
+
+    if (lowerKey === 'r') {
+      event.preventDefault();
+      void clickRotate(getActiveFilePane());
+      return;
+    }
   }
 
   if (event.key === 'Tab' && isSplit.value) {
@@ -579,7 +600,6 @@ const keyActions = {
   ArrowDown:  () => clickZoomOut(getActivePane()),
   '=':        () => clickZoomIn(getActivePane()),
   '-':        () => clickZoomOut(getActivePane()),
-  '0':        () => clickZoomActual(getActivePane()),
   ' ':        () => toggleZoomFit(getActivePane()),
   Escape:     () => closeWindow(),
 };

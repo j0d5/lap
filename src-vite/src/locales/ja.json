@@ -208,6 +208,8 @@
     "favorite_all": "お気に入り",
     "unfavorite_all": "お気に入り解除",
     "action": "操作",
+    "file_actions": "ファイル操作",
+    "labels_and_display": "ラベルと表示",
     "tag_all": "タグ",
     "dedup": {
       "title": "重複",

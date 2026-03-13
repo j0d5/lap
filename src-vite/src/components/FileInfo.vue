@@ -203,6 +203,20 @@
                 @click.stop="emit('quickEditComment')"
               />
             </div>
+
+            <!-- Rotate Display -->
+            <template v-if="fileInfo?.rotate !== 0">
+            <div class="text-[10px] uppercase tracking-widest font-bold text-base-content/25">{{ $t('menu.meta.rotate') }}</div>
+            <div class="flex items-center gap-2 min-h-6">
+              <span class="text-xs font-semibold text-base-content/65">{{ normalizedRotate }}°</span>
+              <TButton
+                :icon="IconRotate"
+                :tooltip="$t('menu.meta.rotate')"
+                :buttonSize="'small'"
+                @click.stop="emit('rotate')"
+              />
+            </div>
+            </template>
           </div>
         </Transition>
       </div>
@@ -334,6 +348,7 @@ import {
   IconFile, IconFolderSearch, IconHeart, IconHeartFilled, IconStar, IconStarFilled, IconEdit,
   IconMapSizeExpand, IconMapSizeRestore,
   IconFolderExpanded,
+  IconRotate,
 } from '@/common/icons';
 import TButton from '@/components/TButton.vue';
 import ToolTip from '@/components/ToolTip.vue';
@@ -356,6 +371,7 @@ const emit = defineEmits([
   'success',
   'toggleFavorite',
   'setRating',
+  'rotate',
   'quickEditTag',
   'quickEditComment',
   'navigateFolder',
@@ -366,6 +382,10 @@ const isMapExpanded = ref(false);
 const showBasicInfoPanel = computed(() => !isMapExpanded.value && config.infoPanel.showBasicInfo);
 const showMetadataPanel = computed(() => !isMapExpanded.value && config.infoPanel.showMetadata);
 const showMapPanel = computed(() => isMapExpanded.value || config.infoPanel.showMap);
+const normalizedRotate = computed(() => {
+  const rotate = Number(props.fileInfo?.rotate || 0) % 360;
+  return rotate < 0 ? rotate + 360 : rotate;
+});
 
 function toggleMapExpand() {
   if (!isMapExpanded.value) {

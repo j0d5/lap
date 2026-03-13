@@ -360,6 +360,8 @@
             @unfavorite-all="selectModeSetFavorites(false)"
             @set-rating-all="selectModeSetRatings"
             @tag-all="clickTag"
+            @comment-all="openCommentEditor"
+            @rotate-all="clickRotate"
           />
           <FileInfo
             v-else
@@ -370,6 +372,7 @@
             @failed="onFileSaved(false)"
             @toggleFavorite="toggleFavorite"
             @setRating="setSelectedFileRating"
+            @rotate="clickRotate"
             @quick-edit-tag="clickTag"
             @quick-edit-comment="openCommentEditor"
             @navigate-folder="handleInfoNavigateFolder"
@@ -479,7 +482,7 @@
     v-if="showCommentMsgbox"
     :title="$t('msgbox.edit_comment.title')"
     :showInput="true"
-    :inputText="fileList[selectedItemIndex]?.comments ?? ''"
+    :inputText="commentInputText"
     :inputPlaceholder="$t('msgbox.edit_comment.placeholder')"
     :multiLine="true"
     :OkText="$t('msgbox.ok')"
@@ -757,6 +760,15 @@ const dedupReclaimBytes = ref(0);
 const dedupTrashGroupKey = ref('');
 const dedupDeleteFileIds = ref<number[]>([]);
 const showCommentMsgbox = ref(false);
+const commentInputText = computed(() => {
+  if (selectMode.value) {
+    const selectedItems = getActionableSelectedItems();
+    if (selectedItems.length === 0) return '';
+    const firstComment = selectedItems[0]?.comments ?? '';
+    return selectedItems.every(item => (item.comments ?? '') === firstComment) ? firstComment : '';
+  }
+  return fileList.value[selectedItemIndex.value]?.comments ?? '';
+});
 const errorMessage = ref('');
 
 // Unsaved changes confirmation
@@ -1357,6 +1369,21 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
+  const isCmdKey = isMac ? event.metaKey : event.ctrlKey;
+  if (isCmdKey && event.key.toLowerCase() === 'f') {
+    event.preventDefault();
+    if (selectedItemIndex.value >= 0 && fileList.value.length > 0) {
+      enterSimilarSearchMode(fileList.value[selectedItemIndex.value]);
+    }
+    return;
+  }
+
+  if (isCmdKey && event.key.toLowerCase() === 'i') {
+    event.preventDefault();
+    toggleInfoPanel();
+    return;
+  }
+
   if (event.key === 'Escape') {
     if (uiStore.isFullScreen) {
       uiStore.isFullScreen = false;
@@ -1382,8 +1409,72 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     return;
   }
 
-  // Disable keyboard events during slideshow (except Escape)
-  if (isSlideShow.value && event.key !== 'Escape') {
+  // Disable keyboard events during slideshow except the toggle shortcut.
+  if (isSlideShow.value && event.key !== 'Escape' && event.key.toLowerCase() !== 'p') {
+    return;
+  }
+
+  const hasModifier = event.metaKey || event.ctrlKey || event.altKey;
+  const lowerKey = event.key.toLowerCase();
+  const ratingShortcut = Number.parseInt(event.key, 10);
+
+  if (!hasModifier && Number.isInteger(ratingShortcut) && ratingShortcut >= 0 && ratingShortcut <= 5) {
+    event.preventDefault();
+    if (selectMode.value) {
+      void selectModeSetRatings(ratingShortcut);
+    } else {
+      void setSelectedFileRating(ratingShortcut);
+    }
+    return;
+  }
+
+  if (!hasModifier) {
+    if ((showQuickView.value || config.settings.grid.showFilmStrip) && lowerKey === 'p') {
+      event.preventDefault();
+      toggleSlideShow();
+      return;
+    }
+
+    if (showQuickView.value && event.key === '=') {
+      event.preventDefault();
+      quickViewMediaRef.value?.zoomIn?.();
+      return;
+    }
+
+    if (showQuickView.value && event.key === '-') {
+      event.preventDefault();
+      quickViewMediaRef.value?.zoomOut?.();
+      return;
+    }
+
+    if (lowerKey === 'f') {
+      event.preventDefault();
+      void toggleFavorite();
+      return;
+    }
+
+    if (lowerKey === 't') {
+      event.preventDefault();
+      void clickTag();
+      return;
+    }
+
+    if (lowerKey === 'c') {
+      event.preventDefault();
+      showCommentMsgbox.value = true;
+      return;
+    }
+
+    if (lowerKey === 'r') {
+      event.preventDefault();
+      void clickRotate();
+      return;
+    }
+  }
+
+  if ((isMac && event.key === 'Enter' && !hasModifier) || (!isMac && event.key === 'F2')) {
+    event.preventDefault();
+    clickRename();
     return;
   }
 
@@ -1397,7 +1488,11 @@ function handleLocalKeyDown(event: KeyboardEvent) {
   } 
   else if (event.key === 'Space' || event.key === ' ') {
     if (showQuickView.value) {
-      quickViewZoomFit.value = !quickViewZoomFit.value;
+      if (fileList.value[selectedItemIndex.value]?.file_type === 2) {
+        quickViewMediaRef.value?.togglePlay?.();
+      } else {
+        quickViewZoomFit.value = !quickViewZoomFit.value;
+      }
     } else if (config.settings.grid.showFilmStrip) {
       filmStripZoomFit.value = !filmStripZoomFit.value;
     } else if (!config.settings.grid.showFilmStrip) {
@@ -1431,28 +1526,15 @@ const handleKeyDown = (e: any) => {
   }
 
   const isCmdKey = isMac ? metaKey : e.payload.ctrlKey;
-  const ratingShortcut = Number.parseInt(key, 10);
 
   if (isCmdKey && key === 'Enter') {   // Open shortcut
     openImageViewer(selectedItemIndex.value, true);
   } else if (isCmdKey && key.toLowerCase() === 'c') {   // Copy shortcut
     clickCopyImage(fileList.value[selectedItemIndex.value].file_path);
-  } else if (isCmdKey && key.toLowerCase() === 's') {
+  } else if (isCmdKey && key.toLowerCase() === 'f') {
     enterSimilarSearchMode(fileList.value[selectedItemIndex.value]);
   } else if (isCmdKey && key.toLowerCase() === 'e') {
     showEditImage.value = true;
-  } else if (isCmdKey && key.toLowerCase() === 'f') {
-    toggleFavorite();
-  } else if (isCmdKey && key.toLowerCase() === 't') {
-    clickTag();
-  } else if (isCmdKey && key.toLowerCase() === 'r') {
-    clickRename();
-  } else if (isCmdKey && Number.isInteger(ratingShortcut) && ratingShortcut >= 1 && ratingShortcut <= 5) {
-    if (selectMode.value) {
-      void selectModeSetRatings(ratingShortcut);
-    } else {
-      void setSelectedFileRating(ratingShortcut);
-    }
   } else if ((isMac && metaKey && key === 'Backspace') || (!isMac && key === 'Delete')) {
     openTrashMsgbox();
   } else if ((keyActions as any)[key]) {
@@ -3446,6 +3528,17 @@ watch(() => config.settings.slideShowInterval, () => {
 
 // set file rotate
 const clickRotate = async () => {
+  if (selectMode.value && selectedCount.value > 0) {
+    const updates = getActionableSelectedItems().map(async item => {
+      item.rotate = (Number(item.rotate) || 0) + 90;
+      tauriEmit('message-from-content', { message: 'rotate', fileId: item.id });
+      syncFileMetaToImageViewer(item.id, { rotate: item.rotate });
+      return setFileRotate(item.id, item.rotate);
+    });
+    await Promise.all(updates);
+    return;
+  }
+
   if (selectedItemIndex.value >= 0) {
     fileList.value[selectedItemIndex.value].rotate += 90;
 
@@ -3474,6 +3567,19 @@ const clickTag = async () => {
 }
 
 const onEditComment = async (newComment: any) => {
+  if (selectMode.value && selectedCount.value > 0) {
+    const updates = getActionableSelectedItems().map(async item => {
+      const result = await editFileComment(item.id, newComment);
+      if (result) {
+        item.comments = newComment;
+        syncFileMetaToImageViewer(item.id, { comments: newComment });
+      }
+    });
+    await Promise.all(updates);
+    showCommentMsgbox.value = false;
+    return;
+  }
+
   if (selectedItemIndex.value >= 0) {
     const file = fileList.value[selectedItemIndex.value];
     const result = await editFileComment(file.id, newComment);
@@ -3487,7 +3593,7 @@ const onEditComment = async (newComment: any) => {
 }
 
 const openCommentEditor = () => {
-  if (selectedItemIndex.value >= 0) {
+  if ((selectMode.value && selectedCount.value > 0) || selectedItemIndex.value >= 0) {
     showCommentMsgbox.value = true;
   }
 }

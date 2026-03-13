@@ -209,6 +209,8 @@
     "favorite_all": "收藏",
     "unfavorite_all": "取消收藏",
     "action": "操作",
+    "file_actions": "文件操作",
+    "labels_and_display": "标记与显示",
     "tag_all": "标签",
     "dedup": {
       "title": "重复项",

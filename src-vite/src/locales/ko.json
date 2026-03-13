@@ -208,6 +208,8 @@
     "favorite_all": "즐겨찾기",
     "unfavorite_all": "즐겨찾기 해제",
     "action": "작업",
+    "file_actions": "파일 작업",
+    "labels_and_display": "태그 및 표시",
     "tag_all": "태그",
     "dedup": {
       "title": "중복",
