@@ -255,7 +255,8 @@
     "not_found": {
       "albums": "No albums found. Try to add an existing folder which contains images or videos",
       "files": "No files found",
-      "folder_files": "No files found. Try to find the subfolders",
+      "folder_files": "This folder has no files",
+      "folder_files_hint": "Subfolders are not included. Try a subfolder. Lap reads files directly from the file system and updates the album automatically.",
       "folders": "No folders found",
       "tag": "No tags found",
       "calendar": "No calendar data found",

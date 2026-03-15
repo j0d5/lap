@@ -255,7 +255,8 @@
     "not_found": {
       "albums": "Keine Alben gefunden",
       "files": "Keine Dateien gefunden",
-      "folder_files": "Keine Dateien. Versuchen Sie Unterordner",
+      "folder_files": "Dieser Ordner enthält keine Dateien",
+      "folder_files_hint": "Unterordner sind nicht eingeschlossen. Versuchen Sie einen Unterordner. Lap liest Dateien direkt aus dem Dateisystem und aktualisiert das Album automatisch.",
       "folders": "Keine Ordner gefunden",
       "tag": "Keine Tags gefunden",
       "calendar": "Keine Kalenderdaten",

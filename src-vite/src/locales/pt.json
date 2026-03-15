@@ -255,7 +255,8 @@
     "not_found": {
       "albums": "Nenhum álbum encontrado",
       "files": "Nenhum arquivo encontrado",
-      "folder_files": "Sem arquivos. Tente subpastas",
+      "folder_files": "Esta pasta não contém arquivos",
+      "folder_files_hint": "As subpastas não estão incluídas. Tente uma subpasta. O Lap lê os arquivos diretamente do sistema e atualiza o álbum automaticamente.",
       "folders": "Nenhuma pasta encontrada",
       "tag": "Nenhuma tag encontrada",
       "calendar": "Sem dados de calendário",

@@ -37,7 +37,8 @@
           <!-- side bar -->
           <div 
             :class="[
-              'fixed top-14 min-w-16 bottom-10 flex flex-col items-center space-y-2', 
+              'fixed top-14 min-w-16 bottom-10 flex flex-col items-center',
+              config.settings.showButtonText ? 'space-y-3' : 'space-y-1' 
             ]" 
             data-tauri-drag-region
           >

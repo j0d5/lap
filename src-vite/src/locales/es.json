@@ -255,7 +255,8 @@
     "not_found": {
       "albums": "No se encontraron álbumes",
       "files": "No se encontraron archivos",
-      "folder_files": "No hay archivos. Busca en subcarpetas",
+      "folder_files": "Esta carpeta no contiene archivos",
+      "folder_files_hint": "Las subcarpetas no están incluidas. Prueba una subcarpeta. Lap lee los archivos directamente del sistema y actualiza el álbum automáticamente.",
       "folders": "No se encontraron carpetas",
       "tag": "No se encontraron etiquetas",
       "calendar": "Sin datos de calendario",

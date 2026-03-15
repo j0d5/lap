@@ -142,22 +142,10 @@ export const useFileMenuItems = (
           },
           { label: '-', action: null },
           {
-            label: localeMsg.value.favorite.one_star,
-            icon: markRaw(Number(f.rating || 0) === 1 ? IconStarFilled : IconStar),
-            shortcut: '1',
-            action: createAction('rating-1')
-          },
-          {
-            label: localeMsg.value.favorite.two_stars,
-            icon: markRaw(Number(f.rating || 0) === 2 ? IconStarFilled : IconStar),
-            shortcut: '2',
-            action: createAction('rating-2')
-          },
-          {
-            label: localeMsg.value.favorite.three_stars,
-            icon: markRaw(Number(f.rating || 0) === 3 ? IconStarFilled : IconStar),
-            shortcut: '3',
-            action: createAction('rating-3')
+            label: localeMsg.value.favorite.five_stars,
+            icon: markRaw(Number(f.rating || 0) === 5 ? IconStarFilled : IconStar),
+            shortcut: '5',
+            action: createAction('rating-5')
           },
           {
             label: localeMsg.value.favorite.four_stars,
@@ -166,10 +154,23 @@ export const useFileMenuItems = (
             action: createAction('rating-4')
           },
           {
-            label: localeMsg.value.favorite.five_stars,
-            icon: markRaw(Number(f.rating || 0) === 5 ? IconStarFilled : IconStar),
-            shortcut: '5',
-            action: createAction('rating-5')
+            label: localeMsg.value.favorite.three_stars,
+            icon: markRaw(Number(f.rating || 0) === 3 ? IconStarFilled : IconStar),
+            shortcut: '3',
+            action: createAction('rating-3')
+          },
+
+          {
+            label: localeMsg.value.favorite.two_stars,
+            icon: markRaw(Number(f.rating || 0) === 2 ? IconStarFilled : IconStar),
+            shortcut: '2',
+            action: createAction('rating-2')
+          },
+          {
+            label: localeMsg.value.favorite.one_star,
+            icon: markRaw(Number(f.rating || 0) === 1 ? IconStarFilled : IconStar),
+            shortcut: '1',
+            action: createAction('rating-1')
           },
         ]
       },

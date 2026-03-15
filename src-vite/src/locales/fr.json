@@ -255,7 +255,8 @@
     "not_found": {
       "albums": "Aucun album trouvé",
       "files": "Aucun fichier trouvé",
-      "folder_files": "Aucun fichier. Essayez les sous-dossiers",
+      "folder_files": "Ce dossier ne contient aucun fichier",
+      "folder_files_hint": "Les sous-dossiers ne sont pas inclus. Essayez un sous-dossier. Lap lit directement les fichiers du système et met à jour l’album automatiquement.",
       "folders": "Aucun dossier trouvé",
       "tag": "Aucun tag trouvé",
       "calendar": "Aucune donnée calendrier",
