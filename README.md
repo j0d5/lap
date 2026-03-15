@@ -27,7 +27,7 @@ It is built as a privacy-focused alternative to cloud photo services: no forced 
 
 ## Features
 
-- **Browse and filter** by date, location, camera, tags, favorites, ratings, and faces(BETA).
+- **Browse and filter** by date, location, camera, lens, tags, favorites, ratings, and faces(BETA).
 - **Manage multiple libraries** and switch between them quickly.
 - **Find duplicates** and batch move unwanted copies to trash.
 - **Edit in place** with crop, rotate, flip, resize, and basic adjustments.
@@ -46,11 +46,11 @@ It is built as a privacy-focused alternative to cloud photo services: no forced 
 ## Screenshots
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home3.png" alt="Lap local photo library manager screenshot" width="900">
+  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap local photo library manager screenshot" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-search.png" alt="Lap local AI photo search screenshot" width="900">
+  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap local AI photo search screenshot" width="900">
 </p>
 
 > Screenshot sample images come from [Wikimedia Commons](https://commons.wikimedia.org/).
