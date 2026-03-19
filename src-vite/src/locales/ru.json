@@ -742,6 +742,9 @@
   "settings": {
     "general": {
       "title": "Общие",
+      "section_language": "Язык",
+      "section_appearance": "Внешний вид",
+      "section_interface": "Интерфейс",
       "appearance": "Внешний вид",
       "appearance_options": [
         "Светлый",
@@ -805,7 +808,8 @@
     },
     "grid_view": {
       "title": "Сетка",
-      "style": "Макет сетки",
+      "section_layout": "Макет",
+      "style": "Режим макета",
       "style_options": [
         "Карточки",
         "Плитка",
@@ -833,15 +837,18 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Предварительный просмотр фотопленки",
-      "preview_position": "Положение предварительного просмотра фотопленки",
+      "title": "Режим фотопленки",
+      "preview_position": "Положение предпросмотра",
+      "preview_position_hint": "Применяется только при включенном режиме фотопленки",
       "preview_position_options": [
-        "Сверху",
-        "Снизу"
+        "Над миниатюрами",
+        "Под миниатюрами"
       ]
     },
     "image_view": {
       "title": "Просмотрщик",
+      "section_viewing": "Просмотр",
+      "section_external_apps": "Внешние приложения",
       "mouse_wheel": "Колесо мыши",
       "mouse_wheel_options": [
         "Пред/След (Ctrl зум)",
@@ -857,8 +864,8 @@
       "auto_play_video": "Автовоспроизведение видео",
       "show_comment": "Показывать комментарий",
       "show_comment_hint": "В новом окне",
-      "external_image_editor": "Внешнее приложение для изображений",
-      "external_video_app": "Внешнее видео-приложение",
+      "external_image_editor": "Открывать изображения в",
+      "external_video_app": "Открывать видео в",
       "external_app_not_selected": "Приложение не выбрано",
       "choose_app": "Выбрать",
       "clear_app": "Очистить",
@@ -878,6 +885,7 @@
     },
     "image_search": {
       "title": "Поиск",
+      "section_search": "Поиск",
       "similarity": "Сходство",
       "similarity_hint": "Выше = Меньше результатов",
       "similarity_options": [
@@ -889,6 +897,7 @@
     },
     "face_recognition": {
       "title": "Распознавание лиц",
+      "enable": "Включить распознавание лиц",
       "beta_hint": "Бета: функция всё ещё в разработке",
       "similarity": "Сходство лиц",
       "cluster_threshold": "Порог кластеризации",
@@ -905,6 +914,7 @@
       "package": {
         "name": "Имя пакета",
         "description": "Описание",
+        "app_description": "Офлайн-ориентированный менеджер фотографий для больших локальных библиотек.",
         "version": "Версия",
         "build_time": "Время сборки",
         "author": "Автор",

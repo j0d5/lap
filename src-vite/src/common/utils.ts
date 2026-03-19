@@ -3,7 +3,7 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useUIStore } from '@/stores/uiStore';
 
-/// get the current operating system (mac, win, or '')
+/// get the current operating system (mac, win, linux, or '')
 export function getOS() {
   const userAgent = navigator.userAgent;
 
@@ -11,6 +11,8 @@ export function getOS() {
     return 'mac';
   } else if (userAgent.includes('Win')) {
     return 'win';
+  } else if (userAgent.includes('Linux') || userAgent.includes('X11')) {
+    return 'linux';
   } else {
     return '';
   }
@@ -18,7 +20,11 @@ export function getOS() {
 
 export const isMac = getOS() === 'mac';
 export const isWin = getOS() === 'win';
+export const isLinux = getOS() === 'linux';
 export const separator = isWin ? '\\' : '/';
+
+// scale values for window size and font size
+export const SCALE_VALUES = [0.8, 0.9, 1, 1.1, 1.2];
 
 /// set the theme
 export function setTheme(appearance: number, themeId: number) {

@@ -164,7 +164,7 @@ import { getName } from '@tauri-apps/api/app';
 import { config, libConfig } from '@/common/config';
 import { useAppUpdater } from '@/common/updater';
 import { useUIStore } from '@/stores/uiStore';
-import { isWin, isMac } from '@/common/utils';
+import { isWin, isMac, SCALE_VALUES } from '@/common/utils';
 import { getAppConfig, switchLibrary, cancelIndexing, cancelFaceIndex } from '@/common/api';
 
 // vue components
@@ -201,6 +201,8 @@ import {
 
 const isAlbumReorderMode = ref(false);
 const isSwitchingLibrary = ref(false);
+const SETTINGS_BASE_WIDTH = 600;
+const SETTINGS_BASE_HEIGHT = 450;
 
 /// i18n
 const { locale, messages } = useI18n();
@@ -430,10 +432,10 @@ async function clickSettings(tabIndex?: number) {
   const options: any = {
     url: '/settings',
     title: 'Settings',
-    width: 600,
-    height: 400,
-    minWidth: 600,
-    minHeight: 400,
+    width: Math.round(SETTINGS_BASE_WIDTH * getSettingsWindowScale()),
+    height: Math.round(SETTINGS_BASE_HEIGHT * getSettingsWindowScale()),
+    minWidth: Math.round(SETTINGS_BASE_WIDTH * getSettingsWindowScale()),
+    minHeight: Math.round(SETTINGS_BASE_HEIGHT * getSettingsWindowScale()),
     resizable: true,
     visible: false, // Start hidden, will show after mount
     transparent: true, // Prevent white flash on show (Tauri 2.x workaround)
@@ -456,6 +458,10 @@ async function clickSettings(tabIndex?: number) {
     newSettingsWindow.close();
     console.log('settings window closed');
   });
+}
+
+function getSettingsWindowScale() {
+  return SCALE_VALUES.find((item) => item === Number(config.settings.scale)) ?? 1;
 }
 
 const onEditDataChanged = (isEdit: boolean) => {

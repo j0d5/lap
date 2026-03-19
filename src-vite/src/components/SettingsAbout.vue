@@ -6,14 +6,16 @@
       </div>
       <div class="flex flex-col text-left">
         <h3 class="text-xl">{{ packageInfo.name }}</h3>
-        <p class="mt-2">{{ packageInfo.description }}</p>
+        <p class="mt-2">{{ $t('settings.about.package.app_description') }}</p>
       </div>
     </div>
 
     <div class="w-full max-w-lg rounded-box border border-base-content/5 bg-base-300/30 p-4 shadow-sm">
-      <div class="space-y-3 text-left text-base-content/30">
+      <div class="space-y-3 text-left">
         <div class="grid grid-cols-[84px_1fr] items-start gap-3 text-sm">
-          {{ $t('settings.about.package.version') }}
+          <div class="text-base-content/30">
+            {{ $t('settings.about.package.version') }}
+          </div>
           <div class="flex items-center gap-2">
             <span>{{ packageInfo.version }}</span>
             <button
@@ -30,17 +32,23 @@
         </div>
 
         <div class="grid grid-cols-[84px_1fr] items-start gap-3 text-sm">
-          {{ $t('settings.about.package.build_time') }}
+          <div class="text-base-content/30">
+            {{ $t('settings.about.package.build_time') }}
+          </div>
           <div>{{ buildTime }}</div>
         </div>
 
         <div class="grid grid-cols-[84px_1fr] items-start gap-3 text-sm">
-          {{ $t('settings.about.package.license') }}
+          <div class="text-base-content/30">
+            {{ $t('settings.about.package.license') }}
+          </div>
           <div>{{ packageInfo.license }}</div>
         </div>
 
         <div class="grid grid-cols-[84px_1fr] items-center gap-1 text-sm">
-          {{ $t('settings.about.package.link') }}
+          <div class="text-base-content/30">
+            {{ $t('settings.about.package.link') }}
+          </div>
           <div class="flex  flex-wrap items-center justify-start gap-2">
             <!-- <a
               :href="packageInfo.homepage"

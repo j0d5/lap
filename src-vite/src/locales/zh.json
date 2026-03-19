@@ -742,7 +742,10 @@
   "settings": {
     "general": {
       "title": "通用",
-      "appearance": "外观",
+      "section_language": "语言",
+      "section_appearance": "外观",
+      "section_interface": "界面",
+      "appearance": "配色模式",
       "appearance_options": [
         "明亮",
         "暗黑"
@@ -805,7 +808,8 @@
     },
     "grid_view": {
       "title": "网格视图",
-      "style": "网格视图布局",
+      "section_layout": "布局",
+      "style": "布局模式",
       "style_options": [
         "卡片视图",
         "平铺视图",
@@ -833,15 +837,18 @@
       ]
     },
     "filmstrip_view": {
-      "title": "胶片预览",
-      "preview_position": "胶片预览位置",
+      "title": "胶片视图",
+      "preview_position": "预览图位置",
+      "preview_position_hint": "仅在开启胶片视图时生效",
       "preview_position_options": [
-        "胶片上方",
-        "胶片下方"
+        "缩略图上方",
+        "缩略图下方"
       ]
     },
     "image_view": {
       "title": "查看器",
+      "section_viewing": "查看",
+      "section_external_apps": "外部应用",
       "mouse_wheel": "鼠标滚轮",
       "mouse_wheel_options": [
         "上一张/下一张图片 (Ctrl 缩放)",
@@ -857,8 +864,8 @@
       "auto_play_video": "自动播放视频",
       "show_comment": "显示备注",
       "show_comment_hint": "当在新窗口查看图片时，显示备注",
-      "external_image_editor": "外部图片应用",
-      "external_video_app": "外部视频应用",
+      "external_image_editor": "打开图片应用",
+      "external_video_app": "打开视频应用",
       "external_app_not_selected": "未选择应用",
       "choose_app": "选择",
       "clear_app": "清除",
@@ -878,6 +885,7 @@
     },
     "image_search": {
       "title": "图片搜索",
+      "section_search": "搜索",
       "similarity": "图片相似度",
       "similarity_hint": "较高 = 更少结果, 较低 = 更多结果",
       "similarity_options": [
@@ -889,6 +897,7 @@
     },
     "face_recognition": {
       "title": "人脸识别",
+      "enable": "启用人脸识别",
       "beta_hint": "Beta：功能仍在开发中",
       "similarity": "人脸相似度",
       "cluster_threshold": "聚类阈值",
@@ -905,6 +914,7 @@
       "package": {
         "name": "包名",
         "description": "描述",
+        "app_description": "一个面向大型本地照片库的离线优先照片管理器。",
         "version": "版本",
         "build_time": "构建时间",
         "author": "作者",

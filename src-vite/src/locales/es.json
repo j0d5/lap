@@ -742,6 +742,9 @@
   "settings": {
     "general": {
       "title": "General",
+      "section_language": "Idioma",
+      "section_appearance": "Apariencia",
+      "section_interface": "Interfaz",
       "appearance": "Apariencia",
       "appearance_options": [
         "Claro",
@@ -805,7 +808,8 @@
     },
     "grid_view": {
       "title": "Vista de cuadrícula",
-      "style": "Diseño de cuadrícula",
+      "section_layout": "Diseño",
+      "style": "Modo de diseño",
       "style_options": [
         "Vista de tarjeta",
         "Vista mosaico",
@@ -833,15 +837,18 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Vista previa de tira de película",
-      "preview_position": "Posición de vista previa de tira de película",
+      "title": "Vista de tira de película",
+      "preview_position": "Posición de la vista previa",
+      "preview_position_hint": "Solo se aplica cuando la vista de tira de película está activada",
       "preview_position_options": [
-        "Arriba",
-        "Abajo"
+        "Sobre miniaturas",
+        "Bajo miniaturas"
       ]
     },
     "image_view": {
       "title": "Visualizador",
+      "section_viewing": "Visualización",
+      "section_external_apps": "Apps externas",
       "mouse_wheel": "Rueda ratón",
       "mouse_wheel_options": [
         "Ant/Sig (Ctrl zoom)",
@@ -857,8 +864,8 @@
       "auto_play_video": "Autoreproducir vídeo",
       "show_comment": "Mostrar comentario",
       "show_comment_hint": "Mostrar en nueva ventana",
-      "external_image_editor": "App de imagen externa",
-      "external_video_app": "App de video externa",
+      "external_image_editor": "Abrir imágenes con",
+      "external_video_app": "Abrir videos con",
       "external_app_not_selected": "Ninguna app seleccionada",
       "choose_app": "Elegir",
       "clear_app": "Borrar",
@@ -878,6 +885,7 @@
     },
     "image_search": {
       "title": "Búsqueda img",
+      "section_search": "Búsqueda",
       "similarity": "Similitud",
       "similarity_hint": "Más alto = Menos resultados",
       "similarity_options": [
@@ -889,6 +897,7 @@
     },
     "face_recognition": {
       "title": "Reconocimiento facial",
+      "enable": "Activar reconocimiento facial",
       "beta_hint": "Beta: función aún en desarrollo",
       "similarity": "Similitud cara",
       "cluster_threshold": "Umbral agrupación",
@@ -905,6 +914,7 @@
       "package": {
         "name": "Nombre paquete",
         "description": "Descripción",
+        "app_description": "Un gestor de fotos local, con enfoque offline-first, para bibliotecas grandes.",
         "version": "Versión",
         "build_time": "Tiempo compilación",
         "author": "Autor",

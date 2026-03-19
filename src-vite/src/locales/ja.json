@@ -742,6 +742,9 @@
   "settings": {
     "general": {
       "title": "一般",
+      "section_language": "言語",
+      "section_appearance": "外観",
+      "section_interface": "インターフェース",
       "appearance": "外観",
       "appearance_options": [
         "ライト",
@@ -805,7 +808,8 @@
     },
     "grid_view": {
       "title": "グリッド表示",
-      "style": "グリッド表示レイアウト",
+      "section_layout": "レイアウト",
+      "style": "レイアウトモード",
       "style_options": [
         "カード表示",
         "タイル表示",
@@ -833,15 +837,18 @@
       ]
     },
     "filmstrip_view": {
-      "title": "フィルムストリップ・プレビュー",
-      "preview_position": "フィルムストリップ・プレビュー位置",
+      "title": "フィルムストリップ表示",
+      "preview_position": "プレビューの位置",
+      "preview_position_hint": "フィルムストリップ表示が有効なときのみ適用されます",
       "preview_position_options": [
-        "上",
-        "下"
+        "サムネイルの上",
+        "サムネイルの下"
       ]
     },
     "image_view": {
       "title": "ビューア",
+      "section_viewing": "表示",
+      "section_external_apps": "外部アプリ",
       "mouse_wheel": "マウスホイール",
       "mouse_wheel_options": [
         "前/次へ (Ctrlで拡大)",
@@ -857,8 +864,8 @@
       "auto_play_video": "動画自動再生",
       "show_comment": "コメントを表示",
       "show_comment_hint": "新しいウィンドウで表示時",
-      "external_image_editor": "外部画像アプリ",
-      "external_video_app": "外部動画アプリ",
+      "external_image_editor": "画像を開くアプリ",
+      "external_video_app": "動画を開くアプリ",
       "external_app_not_selected": "アプリが選択されていません",
       "choose_app": "選択",
       "clear_app": "クリア",
@@ -878,6 +885,7 @@
     },
     "image_search": {
       "title": "画像検索",
+      "section_search": "検索",
       "similarity": "類似度",
       "similarity_hint": "高い = 結果が少ない",
       "similarity_options": [
@@ -889,6 +897,7 @@
     },
     "face_recognition": {
       "title": "顔認識",
+      "enable": "顔認識を有効化",
       "beta_hint": "ベータ版: 機能は現在開発中です",
       "similarity": "顔類似度",
       "cluster_threshold": "クラスタしきい値",
@@ -905,6 +914,7 @@
       "package": {
         "name": "パッケージ名",
         "description": "説明",
+        "app_description": "大規模なローカルライブラリ向けの、オフラインファーストのフォトマネージャー。",
         "version": "バージョン",
         "build_time": "ビルド日時",
         "author": "作者",

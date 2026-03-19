@@ -742,6 +742,9 @@
   "settings": {
     "general": {
       "title": "Allgemein",
+      "section_language": "Sprache",
+      "section_appearance": "Erscheinungsbild",
+      "section_interface": "Oberfläche",
       "appearance": "Erscheinungsbild",
       "appearance_options": [
         "Hell",
@@ -805,7 +808,8 @@
     },
     "grid_view": {
       "title": "Rasteransicht",
-      "style": "Rasteransicht-Layout",
+      "section_layout": "Layout",
+      "style": "Layoutmodus",
       "style_options": [
         "Kartenansicht",
         "Kachelansicht",
@@ -833,15 +837,18 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Filmstreifen-Vorschau",
-      "preview_position": "Filmstreifen-Vorschauposition",
+      "title": "Filmstreifenansicht",
+      "preview_position": "Vorschauposition",
+      "preview_position_hint": "Gilt nur, wenn die Filmstreifenansicht aktiviert ist",
       "preview_position_options": [
-        "Oben",
-        "Unten"
+        "Über den Miniaturen",
+        "Unter den Miniaturen"
       ]
     },
     "image_view": {
       "title": "Viewer",
+      "section_viewing": "Ansicht",
+      "section_external_apps": "Externe Apps",
       "mouse_wheel": "Mausrad",
       "mouse_wheel_options": [
         "Vorher/Nächst (Strg Zoom)",
@@ -857,8 +864,8 @@
       "auto_play_video": "Video Autoplay",
       "show_comment": "Kommentar zeigen",
       "show_comment_hint": "In neuem Fenster",
-      "external_image_editor": "Externe Bild-App",
-      "external_video_app": "Externe Video-App",
+      "external_image_editor": "Bilder öffnen mit",
+      "external_video_app": "Videos öffnen mit",
       "external_app_not_selected": "Keine App ausgewählt",
       "choose_app": "Auswählen",
       "clear_app": "Zurücksetzen",
@@ -878,6 +885,7 @@
     },
     "image_search": {
       "title": "Bildsuche",
+      "section_search": "Suche",
       "similarity": "Ähnlichkeit",
       "similarity_hint": "Hoch = Weniger Ergebnisse",
       "similarity_options": [
@@ -889,6 +897,7 @@
     },
     "face_recognition": {
       "title": "Gesichtserkennung",
+      "enable": "Gesichtserkennung aktivieren",
       "beta_hint": "Beta: Funktion ist noch in Entwicklung",
       "similarity": "Gesichtsähnlichkeit",
       "cluster_threshold": "Cluster-Schwellenwert",
@@ -905,6 +914,7 @@
       "package": {
         "name": "Paketname",
         "description": "Beschreibung",
+        "app_description": "Ein Offline-First-Fotomanager für große lokale Bibliotheken.",
         "version": "Version",
         "build_time": "Build-Zeit",
         "author": "Autor",

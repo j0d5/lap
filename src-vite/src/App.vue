@@ -11,12 +11,11 @@ import { emit } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useConfigStore } from '@/stores/configStore';
 import { useLibraryStore } from '@/stores/libraryStore';
-import { setTheme } from '@/common/utils';
+import { setTheme, SCALE_VALUES } from '@/common/utils';
 
 const libConfig = useLibraryStore();
 const isReady = ref(false);
 const config = useConfigStore();
-const SCALE_VALUES = [0.8, 0.9, 1, 1.1, 1.2];
 
 // Auto-save library state when any config changes
 watch(() => libConfig.$state, () => {
