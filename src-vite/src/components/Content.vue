@@ -3423,12 +3423,17 @@ const onRenameFile = async (newName: string) => {
 }
 
 const onMoveTo = async () => {
+  let movedCount = 0;
+  let sourceAlbumId = 0;
+
   if (selectMode.value && selectedCount.value > 0) {    // multi-select mode
     const moves = getActionableSelectedItems()
       .map(async item => {
         const movedFile = await moveFile(item.id, item.file_path, libConfig.destFolder.folderId, libConfig.destFolder.folderPath);
         if(movedFile) {
           console.log('onMoveTo:', movedFile);
+          sourceAlbumId = sourceAlbumId || Number(item.album_id || 0);
+          movedCount += 1;
           removeFromFileList(fileList.value.indexOf(item));
         }
       });
@@ -3439,9 +3444,22 @@ const onMoveTo = async () => {
     const movedFile = await moveFile(file.id, file.file_path, libConfig.destFolder.folderId, libConfig.destFolder.folderPath);
     if(movedFile) {
       console.log('onMoveTo:', movedFile);
+      sourceAlbumId = Number(file.album_id || 0);
+      movedCount = 1;
       removeFromFileList(selectedItemIndex.value);
     }
   }
+
+  const destAlbumId = Number(libConfig.destFolder.albumId || 0);
+  if (movedCount > 0 && sourceAlbumId > 0 && destAlbumId > 0 && sourceAlbumId !== destAlbumId) {
+    tauriEmit('album-count-delta', {
+      deltas: [
+        { albumId: sourceAlbumId, totalDelta: -movedCount, indexedDelta: -movedCount },
+        { albumId: destAlbumId, totalDelta: movedCount, indexedDelta: movedCount },
+      ],
+    });
+  }
+
   showMoveTo.value = false;
 }
 
