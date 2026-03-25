@@ -68,13 +68,13 @@ fn build_libraw() {
     build
         .cpp(true)
         .include(&libraw_source)
+        .warnings(false)
         .define("LIBRAW_BUILDLIB", None);
 
     if is_windows {
         build
             .flag("/std:c++17")
             .flag("/EHsc")
-            .flag("/W0")
             .define("WIN32", None)
             .define("LIBRAW_NODLL", None);
     } else {
@@ -118,6 +118,7 @@ fn build_libraw() {
     shim.cpp(true)
         .include(&libraw_source)
         .include(libraw_source.join("libraw"))
+        .warnings(false)
         .file("src/libraw_shim.cpp");
 
     if is_windows {
@@ -203,7 +204,10 @@ fn collect_cpp_sources(dir: &Path) -> Vec<PathBuf> {
             if path.is_dir() {
                 sources.extend(collect_cpp_sources(&path));
             } else if path.extension().is_some_and(|ext| ext == "cpp") {
-                sources.push(path);
+                let name = path.file_name().unwrap_or_default().to_string_lossy();
+                if !name.ends_with("_ph.cpp") {
+                    sources.push(path);
+                }
             }
         }
     }

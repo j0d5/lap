@@ -15,6 +15,7 @@ use std::io::BufReader;
 use std::io::Cursor;
 use std::panic;
 use std::path::Path;
+#[cfg(target_os = "macos")]
 use std::process::Command;
 
 /// Quick probing of image dimensions without loading the entire file
