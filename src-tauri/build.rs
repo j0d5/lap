@@ -172,31 +172,117 @@ fn build_libraw() {
 
 fn build_libraw_windows() {
     println!("cargo:rerun-if-changed=src/libraw_shim.cpp");
-    println!("cargo:rerun-if-changed=resources/libraw/LibRaw-0.22.0-Win64.zip");
+    println!("cargo:rerun-if-changed=third_party/LibRaw");
+    println!("cargo:rerun-if-changed=third_party/libjpeg-turbo");
 
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let libraw_root = manifest_dir.join("resources/libraw/windows/LibRaw-0.22.0");
-    let include_root = libraw_root.join("libraw");
-    let lib_dir = libraw_root.join("lib");
+    let out_dir = out_dir_path();
 
-    if !include_root.exists() || !lib_dir.join("libraw.lib").exists() {
+    // Build libjpeg-turbo from submodule (Windows/MSVC)
+    let jpeg_build = build_libjpeg_windows(&manifest_dir, &out_dir);
+
+    // Build LibRaw from submodule source using cc crate
+    let libraw_source = manifest_dir.join("third_party/LibRaw");
+    if !libraw_source.exists() {
         panic!(
-            "LibRaw Windows package is not extracted. Expected {} and {}. Extract resources/libraw/LibRaw-0.22.0-Win64.zip to resources/libraw/windows before building on Windows.",
-            include_root.display(),
-            lib_dir.join("libraw.lib").display()
+            "LibRaw source not found at {}. Run: git submodule update --init --recursive",
+            libraw_source.display()
         );
     }
 
-    println!("cargo:rustc-link-search=native={}", lib_dir.display());
-    println!("cargo:rustc-link-lib=dylib=libraw");
+    let src = libraw_source.join("src");
+    let libraw_sources = collect_cpp_sources(&src);
 
+    let mut build = cc::Build::new();
+    build
+        .cpp(true)
+        .flag("/std:c++17")
+        .flag("/EHsc")
+        .flag("/W0")
+        .define("WIN32", None)
+        .define("LIBRAW_NODLL", None)
+        .define("LIBRAW_BUILDLIB", None)
+        .include(&libraw_source);
+
+    if let Some(jpeg) = &jpeg_build {
+        for inc in &jpeg.include_dirs {
+            build.include(inc);
+        }
+        build.define("USE_JPEG", None);
+    }
+
+    for source_file in &libraw_sources {
+        build.file(source_file);
+    }
+
+    build.compile("raw");
+
+    if let Some(jpeg) = &jpeg_build {
+        println!("cargo:rustc-link-search=native={}", jpeg.lib_dir.display());
+        println!("cargo:rustc-link-lib=static=jpeg-static");
+    }
+    println!("cargo:rustc-link-lib=ws2_32");
+
+    // Build the shim
     cc::Build::new()
         .cpp(true)
-        .flag_if_supported("/std:c++17")
-        .include(&libraw_root)
-        .include(&include_root)
+        .flag("/std:c++17")
+        .flag("/EHsc")
+        .define("WIN32", None)
+        .define("LIBRAW_NODLL", None)
+        .include(&libraw_source)
+        .include(libraw_source.join("libraw"))
         .file("src/libraw_shim.cpp")
         .compile("lap_libraw_shim");
+}
+
+fn build_libjpeg_windows(manifest_dir: &Path, out_dir: &Path) -> Option<JpegBuild> {
+    let source_dir = manifest_dir.join("third_party/libjpeg-turbo");
+    if !source_dir.exists() {
+        println!(
+            "cargo:warning=libjpeg-turbo submodule not found at {}. Run: git submodule update --init --recursive",
+            source_dir.display()
+        );
+        return None;
+    }
+
+    let build_root = out_dir.join("libjpeg-win-build");
+    let binary_dir = build_root.join("build");
+    let static_lib = binary_dir.join("jpeg-static.lib");
+
+    fs::create_dir_all(&binary_dir).unwrap();
+
+    if !static_lib.exists() {
+        run_command(
+            Command::new("cmake")
+                .arg("-G")
+                .arg("NMake Makefiles")
+                .arg("-DCMAKE_BUILD_TYPE=Release")
+                .arg("-DENABLE_SHARED=FALSE")
+                .arg("-DENABLE_STATIC=TRUE")
+                .arg(source_dir.as_os_str())
+                .current_dir(&binary_dir),
+            "configure libjpeg-turbo for Windows",
+        );
+
+        let jobs = env::var("NUM_JOBS").unwrap_or_else(|_| "1".to_string());
+        run_command(
+            Command::new("cmake")
+                .arg("--build")
+                .arg(".")
+                .arg("--target")
+                .arg("jpeg-static")
+                .arg("--parallel")
+                .arg(jobs)
+                .current_dir(&binary_dir),
+            "build libjpeg-turbo for Windows",
+        );
+    }
+
+    Some(JpegBuild {
+        include_dirs: vec![binary_dir.clone(), source_dir],
+        lib_dir: binary_dir,
+    })
 }
 
 struct JpegBuild {
@@ -251,6 +337,22 @@ fn build_libjpeg(manifest_dir: &Path, out_dir: &Path) -> Option<JpegBuild> {
         include_dirs: vec![binary_dir.clone(), source_dir],
         lib_dir: binary_dir,
     })
+}
+
+/// Recursively collect all .cpp files under a directory
+fn collect_cpp_sources(dir: &Path) -> Vec<PathBuf> {
+    let mut sources = Vec::new();
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                sources.extend(collect_cpp_sources(&path));
+            } else if path.extension().is_some_and(|ext| ext == "cpp") {
+                sources.push(path);
+            }
+        }
+    }
+    sources
 }
 
 fn out_dir_path() -> PathBuf {
