@@ -189,23 +189,156 @@ jobs:
             src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
           if-no-files-found: error
 
-      - name: Prepare files for pr-build release tag
+  build-windows:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
         shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: windows-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            windows-pnpm-store-
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\.cargo\bin\
+            ~\.cargo\registry\index\
+            ~\.cargo\registry\cache\
+            ~\.cargo\git\db\
+            src-tauri\target\
+          key: windows-x86_64-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            windows-x86_64-cargo-
+
+      - name: Install frontend dependencies
+        working-directory: src-vite
+        run: pnpm install --frozen-lockfile
+
+      - name: Download AI Models (Windows)
+        shell: pwsh
+        run: .\scripts\download_models.ps1
+
+      - name: Force app frontend build command (Windows CI only)
+        shell: pwsh
         run: |
-          set -euo pipefail
-          mkdir -p release-files
+          $path = "src-tauri/tauri.conf.json"
+          $json = Get-Content $path -Raw | ConvertFrom-Json
+          $json.build.beforeBuildCommand = "pnpm --dir ../src-vite build || pnpm --dir src-vite build"
+          $json | ConvertTo-Json -Depth 100 | Set-Content -Path $path -Encoding utf8
 
-          find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg" -exec cp {} release-files/ \; 2>/dev/null || true
-          find src-tauri/target/release/bundle/dmg -name "*.dmg" -exec cp {} release-files/ \; 2>/dev/null || true
-          find src-tauri/target/aarch64-apple-darwin/release/bundle/dmg -name "*.dmg.sig" -exec cp {} release-files/ \; 2>/dev/null || true
-          find src-tauri/target/release/bundle/dmg -name "*.dmg.sig" -exec cp {} release-files/ \; 2>/dev/null || true
-          find src-tauri/target/aarch64-apple-darwin/release/bundle/macos -name "*.app.tar.gz" -exec cp {} release-files/ \; 2>/dev/null || true
-          find src-tauri/target/release/bundle/macos -name "*.app.tar.gz" -exec cp {} release-files/ \; 2>/dev/null || true
-          find src-tauri/target/aarch64-apple-darwin/release/bundle/macos -name "*.app.tar.gz.sig" -exec cp {} release-files/ \; 2>/dev/null || true
-          find src-tauri/target/release/bundle/macos -name "*.app.tar.gz.sig" -exec cp {} release-files/ \; 2>/dev/null || true
+      - name: Setup MSVC build environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-          ls -la release-files
-          test -n "$(ls -A release-files)"
+      - name: Build FFmpeg with vcpkg (Windows dynamic)
+        shell: pwsh
+        run: |
+          $vcpkgRoot = Join-Path $env:RUNNER_TEMP "vcpkg"
+          git clone --depth 1 https://github.com/microsoft/vcpkg.git $vcpkgRoot
+          & "$vcpkgRoot\bootstrap-vcpkg.bat" -disableMetrics
+          & "$vcpkgRoot\vcpkg.exe" install ffmpeg:x64-windows --clean-after-build
+
+          $dllCandidates = @(
+            (Join-Path $vcpkgRoot "installed\x64-windows\bin"),
+            (Join-Path $vcpkgRoot "packages\ffmpeg_x64-windows\bin")
+          )
+          $ffmpegDllDir = $dllCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $ffmpegDllDir) {
+            throw "FFmpeg DLL directory not found. Checked: $($dllCandidates -join ', ')"
+          }
+          $destDir = "src-tauri/resources/ffmpeg"
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+          $dlls = Get-ChildItem -Path $ffmpegDllDir -Filter "*.dll" -File -ErrorAction SilentlyContinue
+          $copied = 0
+          foreach ($file in $dlls) {
+            Copy-Item $file.FullName $destDir -Force
+            $copied++
+          }
+          if ($copied -eq 0) {
+            throw "No DLL files found in $ffmpegDllDir"
+          }
+
+          "VCPKG_ROOT=$vcpkgRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "VCPKGRS_TRIPLET=x64-windows" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "VCPKGRS_DYNAMIC=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Extract LibRaw Windows package
+        shell: pwsh
+        run: |
+          $zipPath = "src-tauri/resources/libraw/LibRaw-0.22.0-Win64.zip"
+          if (-not (Test-Path $zipPath)) {
+            throw "LibRaw Windows package not found: $zipPath"
+          }
+
+          $destRoot = "src-tauri/resources/libraw/windows"
+          New-Item -ItemType Directory -Force -Path $destRoot | Out-Null
+          Expand-Archive -Path $zipPath -DestinationPath $destRoot -Force
+
+      - name: Build and Sign (Windows x64)
+        uses: tauri-apps/tauri-action@v0.5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: .
+          args: --verbose --target x86_64-pc-windows-msvc --bundles msi --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lap-pr-windows-x64-${{ github.event.pull_request.number || github.run_number }}
+          path: |
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi.sig
+          if-no-files-found: error
+
+  publish-pr-build:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lap-pr-*
+          path: release-files
+          merge-multiple: true
+
+      - name: Show release files
+        run: ls -la release-files
 
       - name: Upload files to GitHub Release tag pr-build
         env:
@@ -224,7 +357,6 @@ jobs:
               --prerelease
           fi
 
-          # Keep pr-build release clean: remove all previous assets first.
           gh release view "$TAG" -R "$GH_REPO" --json assets --jq '.assets[].name' | while IFS= read -r asset; do
             [ -n "$asset" ] || continue
             gh release delete-asset "$TAG" "$asset" -R "$GH_REPO" -y
