@@ -6,9 +6,43 @@
  */
 use ffmpeg_next as ffmpeg;
 use image::{DynamicImage, ImageFormat, RgbImage};
-use rusqlite::Result;
 use std::collections::HashMap;
 use std::io::Cursor;
+use std::panic::{self, AssertUnwindSafe};
+
+/// Upper bound on demuxed packets while extracting one video thumbnail.
+/// Corrupt or pathological files can otherwise iterate packets indefinitely.
+const MAX_THUMB_DECODE_PACKETS: usize = 24_000;
+
+/// Prefix for errors emitted only when Rust panics inside FFmpeg wrappers (not normal I/O failures).
+const FFMPEG_PANIC_ERR_PREFIX: &str = "LAP_FFMPEG_PANIC:";
+
+/// Wraps FFmpeg work so a Rust panic in `ffmpeg-next` does not tear down the whole app.
+/// Note: `abort()` from libav/ffmpeg C code cannot be caught here; only unwinding panics.
+fn ffmpeg_catch_panic<T>(
+    file_path: &str,
+    context: &str,
+    op: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    let path = file_path.to_string();
+    match panic::catch_unwind(AssertUnwindSafe(op)) {
+        Ok(inner) => inner,
+        Err(_) => {
+            eprintln!(
+                "Panic caught during {} for video file: {}",
+                context, path
+            );
+            Err(format!(
+                "{}{}: {}",
+                FFMPEG_PANIC_ERR_PREFIX, context, path
+            ))
+        }
+    }
+}
+
+fn is_ffmpeg_panic_err(e: &str) -> bool {
+    e.starts_with(FFMPEG_PANIC_ERR_PREFIX)
+}
 
 /// Extract rotation from a video stream.
 /// First checks the legacy `rotate` metadata tag, then falls back to the
@@ -58,6 +92,19 @@ fn get_stream_rotation(stream: &ffmpeg::format::stream::Stream) -> i32 {
 
 /// Get video dimensions using ffmpeg (accounts for rotation)
 pub fn get_video_dimensions(file_path: &str) -> Result<(u32, u32), String> {
+    match ffmpeg_catch_panic(file_path, "reading dimensions", || {
+        get_video_dimensions_inner(file_path)
+    }) {
+        Ok(dims) => Ok(dims),
+        Err(e) if is_ffmpeg_panic_err(&e) => {
+            eprintln!("Degrading video dimensions to 0×0 after FFmpeg panic: {}", e);
+            Ok((0, 0))
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn get_video_dimensions_inner(file_path: &str) -> Result<(u32, u32), String> {
     ffmpeg_next::init().map_err(|e| format!("ffmpeg init error: {:?}", e))?;
     match ffmpeg_next::format::input(&file_path) {
         Ok(ictx) => {
@@ -85,6 +132,17 @@ pub fn get_video_dimensions(file_path: &str) -> Result<(u32, u32), String> {
 
 /// get video duration using ffmpeg
 pub fn get_video_duration(file_path: &str) -> Result<u64, String> {
+    match ffmpeg_catch_panic(file_path, "reading duration", || get_video_duration_inner(file_path)) {
+        Ok(d) => Ok(d),
+        Err(e) if is_ffmpeg_panic_err(&e) => {
+            eprintln!("Degrading video duration to 0 after FFmpeg panic: {}", e);
+            Ok(0)
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn get_video_duration_inner(file_path: &str) -> Result<u64, String> {
     ffmpeg_next::init().map_err(|e| format!("ffmpeg init error: {:?}", e))?;
     let ictx =
         ffmpeg_next::format::input(file_path).map_err(|e| format!("Failed to open file: {e}"))?;
@@ -102,7 +160,16 @@ pub fn get_video_thumbnail(
     file_path: &str,
     thumbnail_size: u32,
 ) -> Result<Option<Vec<u8>>, String> {
-    get_video_thumbnail_internal(file_path, thumbnail_size, true)
+    match ffmpeg_catch_panic(file_path, "thumbnail extraction", || {
+        get_video_thumbnail_internal(file_path, thumbnail_size, true)
+    }) {
+        Ok(v) => Ok(v),
+        Err(e) if is_ffmpeg_panic_err(&e) => {
+            eprintln!("Skipping video thumbnail after FFmpeg panic: {}", e);
+            Ok(None)
+        }
+        Err(e) => Err(e),
+    }
 }
 
 fn get_video_thumbnail_internal(
@@ -142,7 +209,17 @@ fn get_video_thumbnail_internal(
         }
     }
 
+    let mut packet_count: usize = 0;
     for (stream, packet) in ictx.packets() {
+        packet_count = packet_count.saturating_add(1);
+        if packet_count > MAX_THUMB_DECODE_PACKETS {
+            eprintln!(
+                "Video thumbnail: packet limit ({}) reached for '{}', giving up",
+                MAX_THUMB_DECODE_PACKETS, file_path
+            );
+            return Ok(None);
+        }
+
         if stream.index() != stream_index {
             continue;
         }
@@ -247,6 +324,17 @@ pub struct VideoMetadata {
 }
 
 pub fn get_video_metadata(file_path: &str) -> Result<VideoMetadata, String> {
+    match ffmpeg_catch_panic(file_path, "reading metadata", || get_video_metadata_inner(file_path)) {
+        Ok(m) => Ok(m),
+        Err(e) if is_ffmpeg_panic_err(&e) => {
+            eprintln!("Degrading video metadata to empty after FFmpeg panic: {}", e);
+            Ok(VideoMetadata::default())
+        }
+        Err(e) => Err(e),
+    }
+}
+
+fn get_video_metadata_inner(file_path: &str) -> Result<VideoMetadata, String> {
     ffmpeg::init().map_err(|e| format!("ffmpeg init error: {:?}", e))?;
 
     let ictx =
@@ -353,6 +441,7 @@ pub fn get_video_metadata(file_path: &str) -> Result<VideoMetadata, String> {
 
     Ok(m)
 }
+
 
 /// Pick the first valid entry from a list of possible tag keys
 fn first_exist(meta: &HashMap<String, String>, keys: &[&str]) -> Option<String> {
