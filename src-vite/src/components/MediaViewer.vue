@@ -14,12 +14,12 @@
       data-tauri-drag-region
     >
       <!-- App Icon + Title (left side, ImageViewer on Windows) -->
-      <!-- <div v-if="isWin && mode === 2" class="absolute left-0 top-0 h-10 flex items-center px-3 select-none" data-tauri-drag-region>
+      <div v-if="isWin && mode === 2 && showWindowControlsBar" class="absolute left-0 top-0 h-10 flex items-center px-3 select-none" data-tauri-drag-region>
         <img :src="iconLogo" class="w-5 h-5 mr-2 rounded" data-tauri-drag-region />
         <span class="text-nowrap text-sm text-base-content/70 overflow-hidden whitespace-pre text-ellipsis" data-tauri-drag-region>
           {{ $t('image_viewer.title') }}
         </span>
-      </div> -->
+      </div>
       <div ref="buttonsRef" class="flex items-center space-x-1">
         <TButton
           :icon="IconPrev"
