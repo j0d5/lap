@@ -122,10 +122,11 @@ jobs:
           $work = Join-Path $env:RUNNER_TEMP "directml"
           $zip = Join-Path $work "directml.zip"
           $pkg = Join-Path $work "pkg"
-          $releaseDir = Join-Path $env:GITHUB_WORKSPACE "src-tauri/target/x86_64-pc-windows-msvc/release"
+          $dest = Join-Path $env:GITHUB_WORKSPACE "src-tauri/target/x86_64-pc-windows-msvc/release/DirectML.dll"
+          $destDir = Split-Path $dest -Parent
 
           New-Item -ItemType Directory -Force -Path $work | Out-Null
-          New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
+          New-Item -ItemType Directory -Force -Path $destDir | Out-Null
 
           Invoke-WebRequest -Uri "https://www.nuget.org/api/v2/package/Microsoft.AI.DirectML/1.15.4" -OutFile $zip
           Expand-Archive $zip -DestinationPath $pkg -Force
@@ -134,9 +135,11 @@ jobs:
           if (-not (Test-Path $dll)) {
             throw "DirectML.dll not found in package: $dll"
           }
+          if (-not (Test-Path $destDir)) {
+            throw "Destination directory was not created: $destDir"
+          }
 
-          $dest = Join-Path $releaseDir "DirectML.dll"
-          Copy-Item -Path $dll -Destination $releaseDir -Force
+          Copy-Item -Path $dll -Destination $dest -Force
 
       - name: Build and Sign (Windows x64)
         uses: tauri-apps/tauri-action@v0.5
