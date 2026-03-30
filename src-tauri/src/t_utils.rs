@@ -20,6 +20,11 @@ use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, Manager, State};
 use walkdir::WalkDir; // https://docs.rs/walkdir/2.5.0/walkdir/
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 // reverse geocoder
 pub static GEOCODER: Lazy<ReverseGeocoder> = Lazy::new(|| {
@@ -299,7 +304,8 @@ exit 1
         let mut command = Command::new("powershell");
         command
             .args(["-NoProfile", "-Command", script])
-            .env("LAP_APP_PATH", app_path);
+            .env("LAP_APP_PATH", app_path)
+            .creation_flags(CREATE_NO_WINDOW);
         command
     })
 }

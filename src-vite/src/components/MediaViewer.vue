@@ -8,7 +8,7 @@
   >
     <!-- Toolbar -->
     <div 
-      v-if="showTitleBar"
+      v-if="showToolbar"
       id="responsiveDiv"
       :class="computedToolbarClass"
       data-tauri-drag-region
@@ -202,7 +202,7 @@
     </div>
 
     <!-- Window Control Buttons (top-right) -->
-    <div v-if="showTitleBar && showWindowControls && isWin" class="absolute top-0 right-0 z-90 flex items-center" @mousedown.stop>
+    <div v-if="showWindowControlsBar && showWindowControls && isWin" class="absolute top-0 right-0 z-90 flex items-center" @mousedown.stop>
       <IconWinMinus 
         class="p-3 w-12 h-10 text-base-content/70 hover:text-base-content hover:bg-base-100 transition-colors duration-300 cursor-pointer" 
         @click.stop="minimizeWindow" 
@@ -623,7 +623,7 @@ const showStatusBadges = computed(() => {
   return !props.isFullScreen && (props.mode === 0 || props.mode === 1 || props.mode === 2);
 });
 
-const showTitleBar = computed(() => {
+const showWindowControlsBar = computed(() => {
   return props.showToolbar && !(isWin && props.mode === 2 && props.isFullScreen);
 });
 let resizeObserver: ResizeObserver | null = null;
