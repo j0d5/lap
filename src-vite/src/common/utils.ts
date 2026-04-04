@@ -293,7 +293,7 @@ export function setThumbLibraryId(id: string) {
 
 export function getThumbUrl(fileId: number | null | undefined, bustCache = false): string {
   if (!fileId || fileId <= 0) return '';
-  const scheme = (isWin || isLinux) ? 'http://thumb.localhost' : 'thumb://localhost';
+  const scheme = isWin ? 'http://thumb.localhost' : 'thumb://localhost';
   const base = `${scheme}/${_thumbLibraryId}/${fileId}`;
   return bustCache ? `${base}?t=${Date.now()}` : base;
 }
@@ -304,7 +304,7 @@ export function getPreviewUrl(
   bustCache = false,
 ): string {
   if (!fileId || fileId <= 0) return '';
-  const scheme = (isWin || isLinux) ? 'http://preview.localhost' : 'preview://localhost';
+  const scheme = isWin ? 'http://preview.localhost' : 'preview://localhost';
   const base = `${scheme}/${_thumbLibraryId}/${fileId}`;
 
   if (bustCache) {
