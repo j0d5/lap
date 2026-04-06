@@ -117,7 +117,7 @@ jobs:
           rm -rf src-tauri/target/debug/build/ffmpeg-sys-next-*
 
       - name: Install frontend dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
         working-directory: src-vite
 
       - name: Download AI Models
