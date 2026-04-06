@@ -40,9 +40,11 @@ pub struct AlbumState {
     pub selected: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FavoriteState {
+    #[serde(default = "default_favorite_tab")]
+    pub tab: String,
     #[serde(alias = "album_id")]
     pub album_id: Option<i64>,
     #[serde(alias = "folder_id")]
@@ -50,7 +52,23 @@ pub struct FavoriteState {
     #[serde(alias = "folder_path")]
     pub folder_path: Option<String>,
     #[serde(default)]
-    pub rating: i32,
+    pub rating: Option<i32>,
+}
+
+fn default_favorite_tab() -> String {
+    "favorite".to_string()
+}
+
+impl Default for FavoriteState {
+    fn default() -> Self {
+        Self {
+            tab: default_favorite_tab(),
+            album_id: None,
+            folder_id: 0,
+            folder_path: None,
+            rating: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -136,6 +154,8 @@ pub struct SearchHistoryItem {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchState {
+    #[serde(default, alias = "search_type")]
+    pub search_type: i32,
     #[serde(alias = "search_text")]
     pub search_text: String,
     #[serde(alias = "search_history")]

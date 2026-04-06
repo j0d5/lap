@@ -107,6 +107,7 @@
             <!-- Component panel (flex-1 to fill remaining space) -->
             <div class="flex-1 overflow-hidden">
               <component ref="panelRef" 
+                :key="libraryVersion"
                 :is="buttons[config.main.sidebarIndex].component" 
                 :titlebar="buttons[config.main.sidebarIndex].text"
                 @editDataChanged="onEditDataChanged"
@@ -134,7 +135,7 @@
           showDesktopTitleBar ? 'rounded-tl-box' : '',
         ]"
       >
-        <Content :titlebar="buttons[config.main.sidebarIndex].text"/>
+        <Content :key="libraryVersion" :titlebar="buttons[config.main.sidebarIndex].text"/>
       </div>
     </div>
 
@@ -198,6 +199,7 @@ import {
 
 const isAlbumReorderMode = ref(false);
 const isSwitchingLibrary = ref(false);
+const libraryVersion = ref(0);
 const SETTINGS_BASE_WIDTH = 600;
 const SETTINGS_BASE_HEIGHT = 450;
 
@@ -359,21 +361,35 @@ const doSwitchLibrary = async (libraryId: string) => {
     await cancelFaceIndex();
     
     await switchLibrary(libraryId);
-    
-    window.location.reload();
+
+    // Reload library state in-place (no page reload)
+    await libConfig.reload();
+    appConfig.value = await getAppConfig();
+    libraryVersion.value++;
+    await emit('library-switched');
   } catch (error) {
     libConfig._initialized = true;
-    isSwitchingLibrary.value = false;
     console.error('Failed to switch library:', error);
+  } finally {
+    isSwitchingLibrary.value = false;
   }
 };
 
 const onManageLibrariesOk = async () => {
   const oldLibId = appConfig.value?.current_library_id;
   appConfig.value = await getAppConfig();
+  showManageLibraries.value = false;
 
   if (oldLibId && appConfig.value?.current_library_id !== oldLibId) {
-    window.location.reload();
+    isSwitchingLibrary.value = true;
+    try {
+      // The backend has already switched; reload in-place.
+      await libConfig.reload();
+      libraryVersion.value++;
+      await emit('library-switched');
+    } finally {
+      isSwitchingLibrary.value = false;
+    }
   }
 };
 

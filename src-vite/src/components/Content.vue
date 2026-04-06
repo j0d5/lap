@@ -2420,7 +2420,7 @@ watch(
   () => [
     libConfig.search.searchText, 
     libConfig.search.similarImageHistoryIndex, 
-    config.search.searchType
+    libConfig.search.searchType
   ],
   () => {
     setTimeout(() => {
@@ -3038,14 +3038,14 @@ async function updateContent(force = false) {
     }
   }
   else if(newIndex === 2) {   // image search
-    if(config.search.searchType === 0) {   // search
+    if(libConfig.search.searchType === 0) {   // search
       if (libConfig.search.searchText) {
         contentTitle.value = localeMsg.value.search.search_images + ' - ' + libConfig.search.searchText;
         getImageSearchFileList(libConfig.search.searchText, 0, requestId);
       } else {
         contentTitle.value = localeMsg.value.search.search_images;
       }
-    } else if (config.search.searchType === 1) { // similar
+    } else if (libConfig.search.searchType === 1) { // similar
       const index = libConfig.search.similarImageHistoryIndex;
       if (index >= 0 && index < libConfig.search.similarImageHistory.length) {
         const file = await getFileInfo(libConfig.search.similarImageHistory[index]);
@@ -3409,7 +3409,7 @@ function handleTitleClick() {
   switch (tempViewMode.value) {
     case 'similar':
       config.main.sidebarIndex = 2;   // search tab
-      config.search.searchType = 1;   // similar image 
+      libConfig.search.searchType = 1;   // similar image 
       break;
     case 'person':
       config.main.sidebarIndex = 5;   // person tab

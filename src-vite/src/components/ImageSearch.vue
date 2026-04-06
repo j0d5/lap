@@ -6,21 +6,21 @@
       <div role="tablist" class="sidebar-header-tabs">
         <a
           role="tab"
-          :class="['sidebar-header-tab', { 'tab-active': config.search.searchType === 0 }]"
+          :class="['sidebar-header-tab', { 'tab-active': libConfig.search.searchType === 0 }]"
           @click="handleTabClick(0)"
         >
           {{ $t('search.search_images') }}
         </a>
         <a
           role="tab"
-          :class="['sidebar-header-tab', { 'tab-active': config.search.searchType === 1 }]"
+          :class="['sidebar-header-tab', { 'tab-active': libConfig.search.searchType === 1 }]"
           @click="handleTabClick(1)"
         >
           {{ $t('search.similar_images') }}
         </a>
         <a
           role="tab"
-          :class="['sidebar-header-tab', { 'tab-active': config.search.searchType === 2 }]"
+          :class="['sidebar-header-tab', { 'tab-active': libConfig.search.searchType === 2 }]"
           @click="handleTabClick(2)"
         >
           {{ $t('search.filename_search') }}
@@ -30,7 +30,7 @@
     </div>
 
     <!-- 0: search text -->
-    <template v-if="config.search.searchType === 0">
+    <template v-if="libConfig.search.searchType === 0">
       <div
         :class="[ 
           'mb-1 p-1 h-10 flex items-center rounded-box whitespace-nowrap cursor-pointer group relative',
@@ -107,7 +107,7 @@
     </template>
 
     <!-- 1: similar images -->
-    <template v-else-if="config.search.searchType === 1">
+    <template v-else-if="libConfig.search.searchType === 1">
       <div class="overflow-x-hidden overflow-y-auto flex-1">
         <div v-if="similarImageHistory.length === 0" class="sidebar-empty text-sm">
           <span class="text-center">{{ $t('search.similar_images_tips') }}</span>
@@ -146,7 +146,7 @@
     </template>
 
     <!-- 2: filename search -->
-    <template v-else-if="config.search.searchType === 2">
+    <template v-else-if="libConfig.search.searchType === 2">
       <div
         :class="[ 
           'p-1 h-10 flex items-center rounded-box whitespace-nowrap cursor-pointer group relative',
@@ -253,7 +253,7 @@ const searchQuery = ref('');
 const isSearchFocused = ref(false);
 
 function syncSearchState() {
-  if (config.search.searchType === 0) {
+  if (libConfig.search.searchType === 0) {
     if (libConfig.search.searchHistoryIndex !== -1) {
       const history = libConfig.search.searchHistory as any[];
       const item = history[libConfig.search.searchHistoryIndex];
@@ -271,7 +271,7 @@ function syncSearchState() {
         focusSearchInput();
       });
     }
-  } else if (config.search.searchType === 2) {
+  } else if (libConfig.search.searchType === 2) {
     nextTick(() => {
       focusSearchInput();
     });
@@ -290,7 +290,7 @@ function focusSearchInput() {
 }
 
 function handleTabClick(type: number) {
-  config.search.searchType = type;
+  libConfig.search.searchType = type;
   syncSearchState();
 }
 
@@ -315,14 +315,14 @@ function handleSearchHistoryClick(index: number, item: any) {
 }
 
 function clearHistory() {
-  if(config.search.searchType === 0) {
+  if(libConfig.search.searchType === 0) {
     libConfig.search.searchText = '';
     libConfig.search.searchHistory = [];
     libConfig.search.searchHistoryIndex = -1;
-  } else if (config.search.searchType === 1) {
+  } else if (libConfig.search.searchType === 1) {
     libConfig.search.similarImageHistory = [];
     libConfig.search.similarImageHistoryIndex = -1;
-  } else if (config.search.searchType === 2) {
+  } else if (libConfig.search.searchType === 2) {
     libConfig.search.fileName = '';
   }
 

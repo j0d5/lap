@@ -66,8 +66,9 @@ export const useLibraryStore = defineStore('libraryStore', {
       name: null,             // selected person name
     },
 
-    /** @type {{ searchText: string, searchHistory: (string | { text: string, fileId: number | null })[], searchHistoryIndex: number, similarImageHistory: number[], similarImageHistoryIndex: number, fileName: string }} */
+    /** @type {{ searchType: number, searchText: string, searchHistory: (string | { text: string, fileId: number | null })[], searchHistoryIndex: number, similarImageHistory: number[], similarImageHistoryIndex: number, fileName: string }} */
     search: {
+      searchType: 0,            // 0: ai search, 1: similar image, 2: filename search
       searchText: '',         // AI search text
       searchHistory: [],      // AI search history
       searchHistoryIndex: -1, // current AI search history index
@@ -132,6 +133,17 @@ export const useLibraryStore = defineStore('libraryStore', {
         console.error('Failed to initialize library state:', error);
         this._initialized = true;
       }
+    },
+
+    /**
+     * Reset all per-library state to defaults and re-initialize from the
+     * backend.  Called after `switchLibrary()` so the UI picks up the new
+     * library's persisted state without a full page reload.
+     */
+    async reload() {
+      this._initialized = false;
+      this.$reset();              // Pinia built-in: restore every field to its initial value
+      await this.init();          // re-read current library id + state from backend
     },
 
     async save() {

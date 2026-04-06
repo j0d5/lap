@@ -51,6 +51,7 @@ const totalCount = ref(0);
 
 const albumListRef = ref<InstanceType<typeof AlbumList> | null>(null);
 let unlistenLibraryTotalRefreshed: (() => void) | null = null;
+let unlistenLibrarySwitched: (() => void) | null = null;
 
 // refresh component
 const albumListKey = ref(0);
@@ -66,12 +67,20 @@ const refreshTotalCount = async () => {
 onMounted(async () => {
   await refreshTotalCount();
   unlistenLibraryTotalRefreshed = await listen('library-total-refreshed', refreshTotalCount);
+  unlistenLibrarySwitched = await listen('library-switched', async () => {
+    albumListKey.value++;          // force AlbumList remount
+    await refreshTotalCount();
+  });
 });
 
 onBeforeUnmount(() => {
   if (unlistenLibraryTotalRefreshed) {
     unlistenLibraryTotalRefreshed();
     unlistenLibraryTotalRefreshed = null;
+  }
+  if (unlistenLibrarySwitched) {
+    unlistenLibrarySwitched();
+    unlistenLibrarySwitched = null;
   }
 });
 
