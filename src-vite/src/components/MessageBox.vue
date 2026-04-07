@@ -172,10 +172,16 @@ function handleKeyDown(event: KeyboardEvent) {
   if (!uiStore.isInputActive('MessageBox')) return;
 
   const { key } = event;
+  const activeElement = document.activeElement;
+  const isInputOrTextarea = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
 
   switch (key) {
     case 'Enter':
-      clickOk();
+      // Don't trigger OK if user is in an input or textarea
+      if (!isInputOrTextarea) {
+        event.preventDefault();
+        clickOk();
+      }
       break;
     case 'Escape':
       clickCancel();

@@ -45,7 +45,7 @@
                 class="input w-full h-6"
                 maxlength="32"
                 @blur="saveRename(lib)"
-                @keydown.enter="saveRename(lib)"
+                @keydown.enter.prevent="saveRename(lib)"
                 @keydown.esc.stop="cancelRename"
                 @click.stop
               />
@@ -297,6 +297,27 @@ const onKeyDown = (e: KeyboardEvent) => {
       clickCancel();
     }
   }
+
+  if (e.key === 'Enter') {
+    // Keep Enter as the dialog confirm shortcut when the user is not
+    // actively typing into an editable field inside the modal.
+    if (showDeleteConfirm.value) return;
+
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    const tagName = target.tagName.toLowerCase();
+    const isEditable =
+      tagName === 'input' ||
+      tagName === 'textarea' ||
+      tagName === 'select' ||
+      target.isContentEditable;
+
+    if (isEditable) return;
+
+    e.preventDefault();
+    clickOk();
+  }
 };
 
 onMounted(async () => {
@@ -410,7 +431,6 @@ const saveRename = async (lib: any) => {
     await editLibrary(lib.id, newName);
     lib.name = newName;
     cancelRename();
-    emit('ok', { type: 'rename', id: lib.id, name: newName }); // Notify parent to refresh if needed
   } catch (error) {
     console.error(error);
   }
@@ -435,7 +455,6 @@ const doAddLibrary = async () => {
       await loadLibraries();
       selectedLibraryId.value = newLib.id;
       await focusLibrary(newLib.id);
-      emit('ok', { type: 'add', library: newLib });
     }
   } catch (error: any) {
     inputErrorMessage.value = error.message || error.toString();
@@ -470,7 +489,6 @@ const toggleVisibility = async (lib: any) => {
   try {
     await hideLibrary(lib.id, newHidden);
     lib.hidden = newHidden;
-    emit('ok', { type: 'hide' }); // Refresh menu
   } catch (error) {
     console.error(error);
   }
@@ -488,7 +506,6 @@ const doDeleteLibrary = async () => {
     showDeleteConfirm.value = false;
     libraryToDelete.value = null;
     await loadLibraries();
-    emit('ok', { type: 'delete' });
   } catch (error) {
     console.error(error);
   }
@@ -519,7 +536,6 @@ const onDragEnd = async () => {
   const ids = libraries.value.map(l => l.id);
   try {
     await reorderLibraries(ids);
-    emit('ok', { type: 'reorder' });
   } catch (error) {
     console.error(error);
   }

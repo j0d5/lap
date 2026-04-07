@@ -220,12 +220,13 @@ function handleKeyDown(event: KeyboardEvent) {
 
   const { key } = event;
   const activeElement = document.activeElement;
-  const isTextarea = activeElement?.tagName === 'TEXTAREA';
+  const isInputOrTextarea = activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA';
 
   switch (key) {
     case 'Enter':
-      // Don't trigger OK if user is in a textarea (allow multiline input)
-      if (!isTextarea) {
+      // Don't trigger OK if user is in an input or textarea to avoid accidental close, e.g. during IME input
+      if (!isInputOrTextarea) {
+        event.preventDefault();
         clickOk();
       }
       break;

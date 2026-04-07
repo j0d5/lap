@@ -48,6 +48,7 @@
   },
   "bundle": {
     "active": true,
+    "category": "Graphics",
     "targets": "all",
     "createUpdaterArtifacts": true,
     "icon": [

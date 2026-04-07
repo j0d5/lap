@@ -7,12 +7,38 @@ const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_KEY = 'lap_last_update_check';
 const UPDATE_CHECK_TIMEOUT_MS = 30_000;
 
-function getErrorMessage(error: unknown, fallback: string) {
-  if (typeof error === 'string' && error.trim()) return error;
+function extractRawErrorMessage(error: unknown) {
+  if (typeof error === 'string') return error.trim();
   if (error && typeof error === 'object' && 'message' in error && typeof (error as any).message === 'string') {
-    return (error as any).message;
+    return (error as any).message.trim();
   }
-  return fallback;
+  return '';
+}
+
+function isSensitiveNetworkError(message: string) {
+  const normalizedMessage = message.toLowerCase();
+  return (
+    normalizedMessage.includes('error sending request') ||
+    normalizedMessage.includes('failed to send request') ||
+    normalizedMessage.includes('failed to download') ||
+    normalizedMessage.includes('timed out') ||
+    normalizedMessage.includes('dns') ||
+    normalizedMessage.includes('getaddrinfo') ||
+    normalizedMessage.includes('connection refused') ||
+    normalizedMessage.includes('connection reset') ||
+    normalizedMessage.includes('network') ||
+    normalizedMessage.includes('http://') ||
+    normalizedMessage.includes('https://') ||
+    normalizedMessage.includes('url')
+  );
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  const message = extractRawErrorMessage(error);
+  if (!message || isSensitiveNetworkError(message)) {
+    return fallback;
+  }
+  return message;
 }
 
 interface AppUpdaterOptions {
@@ -83,15 +109,33 @@ export function useAppUpdater(localeMsg: Ref<any>, options: AppUpdaterOptions = 
     downloadedBytes = 0;
   }
 
+  function resetPendingUpdateState() {
+    updateAvailable.value = false;
+    updateVersion.value = '';
+    currentUpdate = null;
+  }
+
+  function markUpdateReadyToRestart() {
+    resetPendingUpdateState();
+    isUpdateReadyToRestart.value = true;
+  }
+
   async function checkWithTimeout() {
-    return await Promise.race([
-      check(),
-      new Promise<never>((_, reject) => {
-        window.setTimeout(() => {
-          reject(new Error('Update check timed out after 30 seconds'));
-        }, UPDATE_CHECK_TIMEOUT_MS);
-      }),
-    ]);
+    let timeoutId: number | null = null;
+    try {
+      return await Promise.race([
+        check(),
+        new Promise<never>((_, reject) => {
+          timeoutId = window.setTimeout(() => {
+            reject(new Error('Update check timed out after 30 seconds'));
+          }, UPDATE_CHECK_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    }
   }
 
   function handleDownloadEvent(event: DownloadEvent) {
@@ -130,9 +174,7 @@ export function useAppUpdater(localeMsg: Ref<any>, options: AppUpdaterOptions = 
     }
 
     isCheckingUpdate.value = true;
-    updateAvailable.value = false;
-    updateVersion.value = '';
-    currentUpdate = null;
+    resetPendingUpdateState();
     resetDownloadProgress();
 
     try {
@@ -184,10 +226,7 @@ export function useAppUpdater(localeMsg: Ref<any>, options: AppUpdaterOptions = 
       resetDownloadProgress();
       toast.info(localeMsg.value.settings.about.auto_update.downloading_update, { placement: toastPlacement });
       await currentUpdate.downloadAndInstall(handleDownloadEvent);
-      updateAvailable.value = false;
-      updateVersion.value = '';
-      currentUpdate = null;
-      isUpdateReadyToRestart.value = true;
+      markUpdateReadyToRestart();
       toast.success(localeMsg.value.settings.about.auto_update.update_installed_waiting_restart, { placement: toastPlacement });
     } catch (error: unknown) {
       resetDownloadProgress();
