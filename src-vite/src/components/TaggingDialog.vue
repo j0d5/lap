@@ -15,8 +15,8 @@
             v-model="tagSearch"
             :placeholder="$t('tag.search_tags')"
             class="w-full bg-transparent border-none focus:ring-0 px-2 text-sm placeholder-base-content/30 focus:outline-none"
-            @focus="isSearchFocused = true"
-            @blur="isSearchFocused = false"
+            @focus="onSearchFocus"
+            @blur="onSearchBlur"
           />
         </div>
         <input
@@ -37,7 +37,7 @@
       <div class="max-h-[180px] overflow-y-auto rounded-box p-2 bg-base-100/40 border border-base-content/5">
         <div v-if="filteredTags.length > 0" class="flex flex-wrap gap-2">
           <div
-            v-for="tag in filteredTags"
+            v-for="(tag, index) in filteredTags"
             :key="tag.id"
             :class="[
               'badge badge-lg overflow-hidden whitespace-pre text-ellipsis cursor-pointer transition-colors duration-200',
@@ -45,6 +45,7 @@
                 'badge-primary': selectedTags.has(tag.id),
                 'badge-outline border-base-content/30 bg-base-content/30': intermediateTags.has(tag.id) && !selectedTags.has(tag.id),
                 'badge-outline text-base-content/30 hover:text-base-content hover:bg-base-100': !selectedTags.has(tag.id) && !intermediateTags.has(tag.id),
+                'ring-2 ring-primary ring-offset-1 ring-offset-base-100': focusedTagIndex === index,
               }
             ]"
             @click="toggleTag(tag.id)"
@@ -75,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { 
   getAllTags, 
   getTagsForFile, 
@@ -104,6 +105,8 @@ const newTagNameInputRef = ref<HTMLInputElement | null>(null);
 const tagSearch = ref('');
 const newTagName = ref('');
 const isSearchFocused = ref(false);
+const focusedTagIndex = ref(-1); // -1 = no tag focused
+const isInTagList = ref(false); // true = keyboard focus is in tag list
 
 // Sets to track tag states
 const selectedTags = ref<Set<number>>(new Set()); // Tags present on ALL selected files
@@ -122,9 +125,8 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown);
   uiStore.pushInputHandler('TaggingDialog');
 
-  setTimeout(() => {
-    tagSearchInputRef.value?.focus();
-  }, 50); // 50ms delay
+  await nextTick();
+  tagSearchInputRef.value?.focus();
 
   loadAllTags();
   loadExistingTagsForFiles();
@@ -229,13 +231,109 @@ function clickCancel() {
   emit('cancel');
 }
 
-// handle escape key
+// Reset tag focus when search results change
+watch(filteredTags, () => {
+  focusedTagIndex.value = -1;
+  isInTagList.value = false;
+});
+
+function onSearchFocus() {
+  isSearchFocused.value = true;
+  isInTagList.value = false;
+  focusedTagIndex.value = -1;
+}
+
+function onSearchBlur() {
+  isSearchFocused.value = false;
+}
+
+function enterTagList() {
+  if (filteredTags.value.length > 0) {
+    isInTagList.value = true;
+    focusedTagIndex.value = 0;
+    tagSearchInputRef.value?.blur();
+    newTagNameInputRef.value?.blur();
+  }
+}
+
+function exitTagList() {
+  isInTagList.value = false;
+  focusedTagIndex.value = -1;
+  tagSearchInputRef.value?.focus();
+}
+
+// Keyboard: ArrowDown→tag list, Space→toggle, Enter→OK, Escape→back/close
 const handleKeyDown = (e: KeyboardEvent) => {
   if (!uiStore.isInputActive('TaggingDialog')) return;
 
   const { key } = e;
-  if(key === 'Escape') {
-    clickCancel();
+  const active = document.activeElement;
+  const isInAnyInput = active === tagSearchInputRef.value || active === newTagNameInputRef.value;
+
+  if (key === 'Tab' && active === newTagNameInputRef.value && !e.shiftKey) {
+    e.preventDefault();
+    if (filteredTags.value.length > 0) {
+      enterTagList();
+    } else {
+      tagSearchInputRef.value?.focus();
+    }
+    return;
+  }
+
+  // Escape: tag list → search input → close dialog
+  if (key === 'Escape') {
+    if (isInTagList.value) {
+      exitTagList();
+    } else {
+      clickCancel();
+    }
+    return;
+  }
+
+  // ArrowDown → enter tag list (from any state, unless already navigating)
+  if (key === 'ArrowDown' && !isInTagList.value) {
+    e.preventDefault();
+    enterTagList();
+    return;
+  }
+
+  // Tag list keyboard navigation
+  if (isInTagList.value && filteredTags.value.length > 0) {
+    const lastIndex = filteredTags.value.length - 1;
+
+    if (key === 'ArrowRight') {
+      e.preventDefault();
+      focusedTagIndex.value = focusedTagIndex.value >= lastIndex ? 0 : focusedTagIndex.value + 1;
+    } else if (key === 'ArrowLeft') {
+      e.preventDefault();
+      focusedTagIndex.value = focusedTagIndex.value <= 0 ? lastIndex : focusedTagIndex.value - 1;
+    } else if (key === 'ArrowUp') {
+      e.preventDefault();
+      exitTagList();
+    } else if (key === ' ') {
+      e.preventDefault();
+      const tag = filteredTags.value[focusedTagIndex.value];
+      if (tag) toggleTag(tag.id);
+    } else if (key === 'Enter') {
+      e.preventDefault();
+      clickOk();
+    } else if (key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        isInTagList.value = false;
+        focusedTagIndex.value = -1;
+        newTagNameInputRef.value?.focus();
+      } else {
+        exitTagList(); // Tab → back to search input (keep focus inside dialog)
+      }
+    }
+    return;
+  }
+
+  // Enter → confirm dialog (when not typing in any input)
+  if (key === 'Enter' && !isInAnyInput) {
+    e.preventDefault();
+    clickOk();
   }
 };
 </script>
