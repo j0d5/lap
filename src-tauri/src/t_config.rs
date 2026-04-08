@@ -284,6 +284,17 @@ fn get_app_data_folder_name() -> String {
     }
 }
 
+/// Get the cache directory for app-managed temporary data.
+/// macos: ~/Library/Caches/com.julyx10.lap
+/// windows: C:\Users\<username>\AppData\Local\com.julyx10.lap\cache
+/// linux: ~/.cache/com.julyx10.lap
+pub fn get_app_cache_dir() -> Result<PathBuf, String> {
+    let app_dir_name = get_app_data_folder_name();
+    dirs::cache_dir()
+        .ok_or_else(|| "Failed to get the local cache directory".to_string())
+        .map(|p| p.join(app_dir_name))
+}
+
 /// Get the libraries directory path
 pub fn get_libraries_dir() -> Result<PathBuf, String> {
     let app_dir = get_app_data_dir()?;

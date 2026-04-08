@@ -143,7 +143,7 @@ pub fn get_image_thumbnail(
         // Open and decode the image
         let img_reader =
             ImageReader::open(file_path).map_err(|e| format!("Failed to open image: {}", e))?;
-        let img_format = img_reader.format().ok_or("Could not detect image format")?;
+        let _img_format = img_reader.format().ok_or("Could not detect image format")?;
         let img = img_reader
             .decode()
             .map_err(|e| format!("Failed to decode image: {}", e))?;
@@ -152,41 +152,22 @@ pub fn get_image_thumbnail(
         // Adjust the image orientation based on the EXIF orientation value
         let adjusted_thumbnail = apply_orientation(thumbnail, orientation);
 
-        // Determine output format based on input format
-        let output_format = if img_format == ImageFormat::Png {
-            ImageFormat::Png
-        } else {
-            ImageFormat::Jpeg
-        };
+        // Use JPEG for all thumbnails so cache files and protocol output stay uniform.
+        let output_format = ImageFormat::Jpeg;
 
         // Save the thumbnail to an in-memory buffer
         let mut buf = Vec::new();
 
-        if output_format == ImageFormat::Jpeg {
-            // For JPEG, convert to RGB8 to remove alpha channel
-            let rgb_image = adjusted_thumbnail.to_rgb8();
-            match rgb_image.write_to(&mut Cursor::new(&mut buf), output_format) {
-                Ok(()) => Ok(Some(buf)),
-                Err(e) => {
-                    eprintln!(
-                        "Failed to write thumbnail to buffer as {:?}: {}",
-                        output_format, e
-                    );
-                    Ok(None)
-                }
-            }
-        } else {
-            // For PNG, keep RGBA8 to preserve alpha channel
-            let rgba_image = adjusted_thumbnail.to_rgba8();
-            match rgba_image.write_to(&mut Cursor::new(&mut buf), output_format) {
-                Ok(()) => Ok(Some(buf)),
-                Err(e) => {
-                    eprintln!(
-                        "Failed to write thumbnail to buffer as {:?}: {}",
-                        output_format, e
-                    );
-                    Ok(None)
-                }
+        // Convert to RGB8 for JPEG output.
+        let rgb_image = adjusted_thumbnail.to_rgb8();
+        match rgb_image.write_to(&mut Cursor::new(&mut buf), output_format) {
+            Ok(()) => Ok(Some(buf)),
+            Err(e) => {
+                eprintln!(
+                    "Failed to write thumbnail to buffer as {:?}: {}",
+                    output_format, e
+                );
+                Ok(None)
             }
         }
     });

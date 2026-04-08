@@ -45,16 +45,18 @@ pub fn register_protocols(builder: Builder<Wry>) -> Builder<Wry> {
     builder
         .register_uri_scheme_protocol("thumb", |_ctx, request| {
             // URL format: thumb://localhost/{library_id}/{file_id}
-            // library_id is for browser cache isolation only; file_id is the last segment
+            // library_id is also used for cache namespace isolation.
             let path = request.uri().path();
-            let file_id_str = path.rsplit('/').next().unwrap_or("");
+            let mut segments = path.trim_start_matches('/').split('/');
+            let library_id = segments.next().unwrap_or("default");
+            let file_id_str = segments.next().unwrap_or("");
             let file_id: i64 = file_id_str.parse().unwrap_or(0);
 
-            if file_id <= 0 {
+            if library_id.is_empty() || file_id <= 0 {
                 return text_response(http::StatusCode::BAD_REQUEST, "invalid file_id");
             }
 
-            match t_sqlite::AThumb::fetch_raw(file_id) {
+            match t_sqlite::AThumb::fetch_raw_for_library(file_id, library_id) {
                 Ok(Some(data)) => image_response(data),
                 _ => text_response(http::StatusCode::NOT_FOUND, "thumbnail not found"),
             }
