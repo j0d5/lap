@@ -2285,23 +2285,23 @@ impl AThumb {
         }))
     }
 
-    pub fn new(
-        file_id: i64,
-        file_path: &str,
-        file_type: i64,
-        orientation: i32,
-        thumbnail_size: u32,
-    ) -> Result<Option<Self>, String> {
-        let library_id = Self::get_current_library_id();
-        Self::new_for_library(
-            file_id,
-            file_path,
-            file_type,
-            orientation,
-            thumbnail_size,
-            &library_id,
-        )
-    }
+    // pub fn new(
+    //     file_id: i64,
+    //     file_path: &str,
+    //     file_type: i64,
+    //     orientation: i32,
+    //     thumbnail_size: u32,
+    // ) -> Result<Option<Self>, String> {
+    //     let library_id = Self::get_current_library_id();
+    //     Self::new_for_library(
+    //         file_id,
+    //         file_path,
+    //         file_type,
+    //         orientation,
+    //         thumbnail_size,
+    //         &library_id,
+    //     )
+    // }
 
     /// insert a thumbnail into db
     fn insert(&self) -> Result<usize, String> {

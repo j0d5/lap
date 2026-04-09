@@ -7,7 +7,7 @@
 use arboard::Clipboard;
 use exif::{In, Reader, Tag};
 use fast_image_resize as fir;
-use image::{DynamicImage, GenericImageView, ImageFormat, ImageReader};
+use image::{DynamicImage, GenericImageView, ImageReader};
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use rusqlite::Result;
@@ -143,13 +143,8 @@ fn compute_thumbnail_dimensions(width: u32, height: u32, thumbnail_size: u32) ->
 }
 
 fn encode_jpeg_rgb8(rgb: &image::RgbImage) -> Result<Vec<u8>, String> {
-    let mut buf = Vec::new();
-    let mut cursor = Cursor::new(&mut buf);
-    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut cursor, 85);
-    encoder
-        .encode_image(rgb)
-        .map_err(|e| format!("Failed to encode JPEG thumbnail: {}", e))?;
-    Ok(buf)
+    crate::t_jpeg::encode_rgb8(rgb, 85)
+        .map_err(|e| format!("Failed to encode JPEG thumbnail: {}", e))
 }
 
 fn resize_dynamic_image_to_jpeg(
@@ -433,10 +428,7 @@ pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String>
         let image = image::load_from_memory(&preview)
             .map_err(|e| format!("Failed to decode embedded RAW preview: {}", e))?;
         let image = apply_orientation(image, get_jpeg_orientation_from_bytes(&preview));
-        let mut buf = Vec::new();
-        image
-            .to_rgb8()
-            .write_to(&mut Cursor::new(&mut buf), ImageFormat::Jpeg)
+        let buf = crate::t_jpeg::encode_rgb8(&image.to_rgb8(), 85)
             .map_err(|e| format!("Failed to encode embedded RAW preview: {}", e))?;
         return Ok(Some(buf));
     }
