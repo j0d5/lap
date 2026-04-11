@@ -371,12 +371,17 @@
                 ]"
               >
                 <div class="w-full h-full bg-base-300 flex items-center justify-center relative overflow-hidden rounded-[inherit] isolation-isolate">
-                  <img
+                  <div
                     v-if="props.fileInfo.thumbnail"
-                    :src="props.fileInfo.thumbnail"
-                    class="w-full h-full object-cover pointer-events-none rounded-[inherit] block"
-                    :style="{ ...getPresetThumbnailStyle(option.value), transform: 'translateZ(0)' }"
-                  />
+                    class="absolute left-0 top-0 overflow-hidden"
+                    :style="presetViewportStyle"
+                  >
+                    <img
+                      :src="props.fileInfo.thumbnail"
+                      class="pointer-events-none block"
+                      :style="getPresetThumbnailImageStyle(option.value)"
+                    />
+                  </div>
                   <IconPalette v-else class="w-4 h-4 text-base-content/10" />
                 </div>
               </div>
@@ -600,6 +605,28 @@ let isApplyingPreset = false;
 let histogramToneAnimationFrame: number | null = null;
 let skipNextCustomPresetLoad = false;
 let histogramLoadId = 0;
+const PRESET_THUMBNAIL_WIDTH = 76;
+const PRESET_THUMBNAIL_HEIGHT = 57;
+
+function buildAdjustmentFilter(values: {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  hue: number;
+  blur: number;
+  filter: string;
+}) {
+  return `
+    brightness(${100 + values.brightness}%)
+    contrast(${100 + values.contrast}%)
+    blur(${values.blur}px)
+    hue-rotate(${values.hue}deg)
+    saturate(${values.saturation}%)
+    ${values.filter === 'grayscale' ? 'grayscale(100%)' : ''}
+    ${values.filter === 'sepia' ? 'sepia(100%)' : ''}
+    ${values.filter === 'invert' ? 'invert(100%)' : ''}
+  `;
+}
 
 const imageStyle = computed((): CSSProperties => ({
   display: 'block',
@@ -628,25 +655,38 @@ const adjustedImageStyle = computed((): CSSProperties => ({
   ...imageStyle.value,
   filter: adjustmentFilter.value,
 }));
+const presetScaleFactor = computed(() => {
+  const previewWidth = containerRect.value?.width || 0;
+  const previewHeight = containerRect.value?.height || 0;
+  if (!previewWidth || !previewHeight) return 1;
+  return Math.min(PRESET_THUMBNAIL_WIDTH / previewWidth, PRESET_THUMBNAIL_HEIGHT / previewHeight);
+});
+const presetViewportStyle = computed((): CSSProperties => {
+  const previewWidth = containerRect.value?.width || 0;
+  const previewHeight = containerRect.value?.height || 0;
+  if (!previewWidth || !previewHeight) {
+    return {
+      width: '100%',
+      height: '100%',
+    };
+  }
+  return {
+    width: `${previewWidth}px`,
+    height: `${previewHeight}px`,
+    transform: `scale(${presetScaleFactor.value})`,
+    transformOrigin: 'top left',
+  };
+});
 const canShowDiffPreview = computed(() => activeEditorTab.value === 'adjust' && hasAdjustmentChanges.value);
 const adjustmentFilter = computed(() => {
-  const filters = [
-    `brightness(${100 + brightness.value}%)`,
-    `contrast(${100 + contrast.value}%)`,
-    `blur(${blur.value}px)`,
-    `hue-rotate(${hue.value}deg)`,
-    `saturate(${saturation.value}%)`,
-  ];
-
-  if (selectedFilter.value === 'grayscale') {
-    filters.push('grayscale(100%)');
-  } else if (selectedFilter.value === 'sepia') {
-    filters.push('sepia(100%)');
-  } else if (selectedFilter.value === 'invert') {
-    filters.push('invert(100%)');
-  }
-
-  return filters.join(' ');
+  return buildAdjustmentFilter({
+    brightness: brightness.value,
+    contrast: contrast.value,
+    saturation: saturation.value,
+    hue: hue.value,
+    blur: blur.value,
+    filter: selectedFilter.value,
+  });
 });
 
 const cropStatus = ref(0);
@@ -1221,14 +1261,6 @@ const initEditImage = async () => {
 
   displayedHistogramBrightness.value = brightness.value;
   displayedHistogramContrast.value = contrast.value;
-
-  await nextTick();
-  autoFitVisualArea();
-  updateRealHistogram();
-
-  setTimeout(() => {
-    isProcessing.value = false;
-  }, 100);
 };
 
 function clearHistogram() {
@@ -1409,20 +1441,14 @@ function animateHistogramTone() {
   histogramToneAnimationFrame = requestAnimationFrame(step);
 }
 
-const getPresetThumbnailStyle = (presetKey: string): CSSProperties => {
+const getPresetThumbnailImageStyle = (presetKey: string): CSSProperties => {
   const p = presetKey === 'custom' ? getConfiguredCustomPreset() : presets[presetKey];
   if (!p) return {};
+
   return {
-    filter: `
-      brightness(${100 + p.brightness}%)
-      contrast(${100 + p.contrast}%)
-      blur(${p.blur}px)
-      hue-rotate(${p.hue}deg)
-      saturate(${p.saturation}%)
-      ${p.filter === 'grayscale' ? 'grayscale(100%)' : ''}
-      ${p.filter === 'sepia' ? 'sepia(100%)' : ''}
-      ${p.filter === 'invert' ? 'invert(100%)' : ''}
-    `,
+    ...adjustedImageStyle.value,
+    filter: buildAdjustmentFilter(p),
+    transition: 'none',
   };
 };
 

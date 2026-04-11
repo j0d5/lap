@@ -11,6 +11,7 @@
  * date:    2024-08-08
  */
 use tauri::Manager;
+use tauri_plugin_aptabase::EventTracker;
 
 mod t_ai;
 mod t_cluster;
@@ -261,9 +262,23 @@ async fn main() {
             t_cmds::dedup_set_keep,
             t_cmds::dedup_delete_selected,
         ])
-        .run(tauri::generate_context!());
+        .build(tauri::generate_context!());
 
-    if let Err(err) = run_result {
-        eprintln!("Error while running application: {}", err);
+    match run_result {
+        Ok(app) => {
+            app.run(|app_handle, event| match event {
+                tauri::RunEvent::Ready => {
+                    let _ = app_handle.track_event("app_started", None);
+                }
+                tauri::RunEvent::Exit { .. } => {
+                    let _ = app_handle.track_event("app_exited", None);
+                    app_handle.flush_events_blocking();
+                }
+                _ => {}
+            });
+        }
+        Err(err) => {
+            eprintln!("Error while running application: {}", err);
+        }
     }
 }

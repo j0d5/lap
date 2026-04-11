@@ -1773,9 +1773,12 @@ const handleKeyDown = (e: any) => {
   } else if (!metaKey && !e.payload.ctrlKey && key.toLowerCase() === 's') {
     enterSimilarSearchMode(fileList.value[selectedItemIndex.value]);
   } else if (isCmdKey && key.toLowerCase() === 'e') {
-    editImageInitialTab.value = config.imageEditor.tab === 'adjust' ? 'adjust' : 'edit';
-    editImageInitialImageSrc.value = getCurrentPreviewImageSrc();
-    showEditImage.value = true;
+    const file = fileList.value[selectedItemIndex.value];
+    if (file && (file.file_type === 1 || file.file_type === 3)) {
+      editImageInitialTab.value = config.imageEditor.tab === 'adjust' ? 'adjust' : 'edit';
+      editImageInitialImageSrc.value = getCurrentPreviewImageSrc();
+      showEditImage.value = true;
+    }
   } else if ((isMac && metaKey && key === 'Backspace') || (!isMac && key === 'Delete')) {
     openTrashMsgbox();
   } else if ((keyActions as any)[key]) {

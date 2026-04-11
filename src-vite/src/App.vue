@@ -66,7 +66,7 @@ onMounted(async () => {
             await libConfig.save();
           }
         } finally {
-          await win.destroy();
+          await win.close();
         }
       });
     } else {

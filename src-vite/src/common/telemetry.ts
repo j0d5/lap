@@ -37,6 +37,4 @@ export async function trackAppLifecycleEvents() {
     config.settings.telemetry.lastDailyActiveDate = dayBucket;
     void trackTelemetryEvent('daily_active', { day: dayBucket });
   }
-
-  void trackTelemetryEvent('app_started');
 }
