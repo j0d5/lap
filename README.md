@@ -93,7 +93,7 @@ cargo tauri dev
 | :--- | :--- |
 | Images | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF, AVIF, JXL |
 | RAW photos | CR2, CR3, CRW, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, DNG, SRW, RWL, MRW, 3FR, MOS, DCR, KDC, ERF, MEF, RAW, MDC |
-| Videos | MP4, MOV, MKV, WebM |
+| Videos | MP4, MOV, M4V, MKV, AVI, FLV, TS, WMV, WebM, and more. HEVC/H.265 is natively supported on macOS; other platforms transcode automatically. |
 
 ## Architecture
 
