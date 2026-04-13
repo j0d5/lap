@@ -38,6 +38,8 @@
           maxlength="255"
           class="input px-1 w-full text-base"
           v-model="child.name"
+          @click.stop
+          @mousedown.stop
           @keydown.enter = "clickRenameFolder(child.name)"
           @keydown.esc = "handleEscKey($event, String(child.id))"
           @blur = "clickRenameFolder(child.name)"
@@ -517,8 +519,13 @@ const handleEscKey = (event: KeyboardEvent, folderId: string) => {
   uiStore.removeInputHandler('AlbumFolder-rename');
 };
 
-const focusTreeRoot = () => {
+const focusTreeRoot = (event: MouseEvent) => {
   if (props.treeRoot) {
+    // If clicking on an input, don't focus the tree root
+    // This prevents the input from blurring when clicked
+    if (event.target instanceof HTMLInputElement) {
+      return;
+    }
     if (props.allowContextMenu) {
       uiStore.setActivePane('left-sidebar');
     }

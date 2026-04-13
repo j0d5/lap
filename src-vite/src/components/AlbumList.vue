@@ -674,7 +674,12 @@ const clickFolder = async (albumIdVal: number, folder: Folder) => {
   await selection.selectFolder(albumIdVal, folder);
 };
 
-const focusAlbumListRoot = () => {
+const focusAlbumListRoot = (event: MouseEvent) => {
+  // If clicking on an input, don't focus the album list root
+  // This prevents inputs inside (like folder renaming) from blurring
+  if (event.target instanceof HTMLInputElement) {
+    return;
+  }
   if (isMainPane.value) {
     uiStore.setActivePane('left-sidebar');
   }

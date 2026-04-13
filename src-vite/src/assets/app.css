@@ -20,11 +20,11 @@ html, body {
 }
 
 @utility input {
-  @apply h-8 border-1 rounded-box focus:border-2 focus:outline-none focus:border-primary hover:bg-base-100 hover:text-base-content cursor-pointer transition-colors duration-200;
+  @apply h-8 border-1 rounded-box focus:border-2 focus:outline-none focus:border-primary hover:bg-base-100 hover:text-base-content cursor-text transition-colors duration-200;
 }
 
 @utility textarea {
-  @apply border-1 rounded-box focus:border-2 focus:outline-none focus:border-primary hover:bg-base-100 hover:text-base-content cursor-pointer transition-colors duration-200;
+  @apply border-1 rounded-box focus:border-2 focus:outline-none focus:border-primary hover:bg-base-100 hover:text-base-content cursor-text transition-colors duration-200;
 }
 
 @utility select {
