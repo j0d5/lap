@@ -1,66 +1,58 @@
 <template>
-  <div ref="videoContainer" class="relative w-full h-full overflow-hidden cursor-pointer bg-black" @wheel.prevent="handleWheel">
+  <div ref="videoContainer" class="relative w-full h-full overflow-hidden cursor-pointer" @wheel.prevent="handleWheel">
     <TransitionGroup :name="transitionName" @after-leave="handleTransitionEnd">
       <div
         v-for="index in [0, 1]"
-        v-show="activeLayer === index"
-        :key="`video-layer-${index}`"
+        v-show="activeVideo === index"
+        :key="`vid-${index}`"
         class="slide-wrapper absolute inset-0 w-full h-full pointer-events-none overflow-hidden"
       >
-        <div class="w-full h-full pointer-events-auto overflow-hidden flex items-center justify-center">
-          <!-- The video.js target -->
-          <div 
-            v-if="videoUrl && (activeLayer === index || isTransitioning)"
-            :id="`vjs-container-${index}`"
-            class="vjs-custom-container"
-            :class="{ 'no-transition': noTransition }"
-            :style="surfaceStyle"
-          >
-            <video
-              :id="`vjs-player-${index}`"
-              class="video-js vjs-big-play-centered vjs-fluid"
-            ></video>
-          </div>
+        <div class="w-full h-full pointer-events-auto overflow-hidden">
+          <video :ref="(el) => { if (el) videoElements[index] = el as HTMLVideoElement }" class="video-js"></video>
         </div>
       </div>
     </TransitionGroup>
 
-    <!-- Loading Overlay -->
-    <div v-if="isPreparing" class="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
-      <div class="flex flex-col items-center gap-3">
-        <span class="loading loading-spinner loading-lg text-primary"></span>
-        <span class="text-white/70 text-sm font-medium">{{ $t('video.preparing') || 'Preparing video...' }}</span>
+    <div v-if="!hasError && !isPlaying && !isLoading" class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+      <div
+        class="w-16 h-16 rounded-full bg-base-100/50 flex items-center justify-center hover:bg-base-100 hover:scale-110 transition-all duration-300 ease-out group pointer-events-auto cursor-pointer"
+        @click.stop="clickPlayVideo"
+      >
+        <component :is="isReplaying ? IconVideoReplay : IconVideoPlay" class="w-8 h-8 text-base-content/50 transition-colors duration-300 group-hover:text-base-content/70" />
       </div>
     </div>
 
-    <!-- Error Overlay -->
-    <div v-if="hasError" class="absolute inset-0 flex flex-col items-center justify-center text-base-content/30 z-10 bg-black/20">
-      <IconVideoSlash class="w-12 h-12 mb-3" />
-      <div class="text-center px-6 max-w-md">{{ errorMessage }}</div>
-      <div class="text-center px-6 max-w-md mt-2 text-sm text-white/60 whitespace-pre-line">
-        {{ externalSuggestionText }}
-      </div>
-      <div class="mt-4 flex items-center gap-2">
-        <button class="btn btn-outline btn-sm" @click="loadVideo(props.filePath!)">Retry</button>
-        <button v-if="canOpenExternalApp" class="btn btn-primary btn-sm" @click="openInExternalApp">
-          {{ externalOpenLabel }}
-        </button>
+    <div v-if="showSpinner" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 bg-base-200/20">
+      <span class="loading loading-spinner loading-lg text-primary opacity-80"></span>
+      <div class="mt-4 text-sm font-medium text-base-content/80 drop-shadow-md">{{ $t('video.loading') }}</div>
+    </div>
+
+    <div v-if="hasError && !isLoading" class="absolute inset-0 flex flex-col items-center justify-center z-10 px-6 text-center overflow-hidden bg-black/50">
+      
+      <div class="relative z-20 flex flex-col items-center justify-center">
+        <IconVideoSlash class="w-10 h-10 mb-3 text-base-content/30" />
+        <div class="max-w-md text-sm whitespace-pre-line text-base-content/30 font-medium">{{ errorMessage }}</div>
+        <div v-if="canOpenExternalApp" class="mt-4 pointer-events-auto">
+          <button class="btn btn-primary btn-sm" @click.stop="openInExternalApp">{{ externalOpenLabel }}</button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from 'vue';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { ref, watch, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
-import videojs from 'video.js';
-import 'video.js/dist/video-js.css';
-
 import { config } from '@/common/config';
-import { IconVideoSlash } from '@/common/icons';
-import { cancelVideoPrepare, prepareVideo } from '@/common/video';
+import { IconVideoSlash, IconVideoPlay, IconVideoReplay } from '@/common/icons';
+import videojs from 'video.js/core';
+import 'video.js/dist/video-js.min.css';
+import { getAssetSrc } from '@/common/utils';
 import { openFileWithApp } from '@/common/api';
+import zhCN from 'video.js/dist/lang/zh-CN.json';
+import { prepareVideo, cancelVideoPrepare } from '@/common/video';
+
+videojs.addLanguage('zh-CN', zhCN);
 
 const props = defineProps({
   filePath: { type: String, required: false },
@@ -73,24 +65,38 @@ const emit = defineEmits(['message-from-video-viewer', 'slideshow-next', 'scale'
 const { t: $t } = useI18n();
 
 const videoContainer = ref<HTMLDivElement | null>(null);
-const players = ref<(ReturnType<typeof videojs> | null)[]>([]);
+const videoElements = ref<HTMLVideoElement[]>([]);
+const players = ref<(ReturnType<typeof videojs> | null)[]>([null, null]);
+const videoJsLang = computed(() => (config.settings.language === 'zh' ? 'zh-CN' : config.settings.language));
 
 const hasError = ref(false);
 const errorMessage = ref('');
+const isLoading = ref(false);
+const showSpinner = ref(false);
 const isPlaying = ref(false);
-const isPreparing = ref(false);
-const videoUrl = ref<string | null>(null);
-
+const isReplaying = ref(false);
+const isFit = ref(false);
 const scale = ref(1);
 const rotate = ref(0);
 const noTransition = ref(false);
-const activeLayer = ref(0);
-const isTransitioning = ref(false);
-const isFit = ref(false);
-
+const activeVideo = ref(0);
 let currentLoadingId = 0;
 
-// Gesture state
+const externalVideoAppPath = computed(() => String(config.settings?.externalVideoAppPath || '').trim());
+const externalVideoAppName = computed(() => String(config.settings?.externalVideoAppName || '').trim());
+const canOpenExternalApp = computed(() => !!(props.filePath && externalVideoAppPath.value));
+const externalOpenLabel = computed(() => {
+  if (externalVideoAppName.value) {
+    return $t('video.errors.open_in_external_app_named', { app: externalVideoAppName.value }) || `Open in ${externalVideoAppName.value}`;
+  }
+  return $t('video.errors.open_in_external_app') || 'Open in external player';
+});
+
+async function openInExternalApp() {
+  if (!props.filePath || !externalVideoAppPath.value) return;
+  await openFileWithApp(props.filePath, externalVideoAppPath.value);
+}
+
 let isTouchpadDevice = false;
 let horizontalDeltaAccumulator = 0;
 let verticalDeltaAccumulator = 0;
@@ -98,6 +104,7 @@ let gestureResetTimeout: ReturnType<typeof setTimeout> | null = null;
 let hasNavigatedThisGesture = false;
 const gestureType = ref<'none' | 'zoom' | 'nav'>('none');
 const navDirection = ref<'next' | 'prev' | ''>('');
+let lastDeltaX = 0;
 const GESTURE_LOCK_THRESHOLD = 10;
 const HORIZONTAL_NAV_THRESHOLD = 100;
 
@@ -107,203 +114,543 @@ const transitionName = computed(() => {
   return '';
 });
 
-const externalVideoAppPath = computed(() => String(config.settings.externalVideoAppPath || '').trim());
-const externalVideoAppName = computed(() => String(config.settings.externalVideoAppName || '').trim());
-const canOpenExternalApp = computed(() => !!externalVideoAppPath.value);
-const externalSuggestionText = computed(() => {
-  if (canOpenExternalApp.value) {
-    return $t('video.errors.use_external_with_app');
-  }
-  return $t('video.errors.use_external');
-});
-const externalOpenLabel = computed(() => {
-  if (externalVideoAppName.value) {
-    return $t('video.errors.open_in_external_app_named', { app: externalVideoAppName.value });
-  }
-  return $t('video.errors.open_in_external_app');
-});
+function handleTransitionEnd() {
+  navDirection.value = '';
+}
 
-const surfaceStyle = computed(() => ({
-  transform: `rotate(${rotate.value}deg) scale(${scale.value})`,
+function resetSwipeState() {
+  gestureType.value = 'none';
+  horizontalDeltaAccumulator = 0;
+  verticalDeltaAccumulator = 0;
+  hasNavigatedThisGesture = false;
+  lastDeltaX = 0;
+  navDirection.value = '';
+  if (gestureResetTimeout) {
+    clearTimeout(gestureResetTimeout);
+    gestureResetTimeout = null;
+  }
+}
+
+const playerOptions = computed(() => ({
+  responsive: false,
+  fluid: false,
+  width: '100%',
+  height: '100%',
+  autoplay: false,
+  muted: config.video.muted,
+  controls: true,
+  preload: 'auto',
+  language: videoJsLang.value,
+  playbackRates: [0.5, 1, 1.25, 1.5, 2],
+  disablePictureInPicture: true,
+  errorDisplay: false,
+  controlBar: {
+    pictureInPictureToggle: false,
+    playbackRateMenuButton: false,
+    fullscreenToggle: true,
+    audioTrackButton: false,
+    volumePanel: { inline: true },
+  },
 }));
 
-const handleTransitionEnd = () => {
-  navDirection.value = '';
-  isTransitioning.value = false;
-};
+const getActivePlayer = () => players.value[activeVideo.value];
 
-const disposePlayer = (index: number) => {
-  if (players.value[index]) {
-    players.value[index]?.dispose();
-    players.value[index] = null;
+const updateTransform = (options: boolean | { resetRotation?: boolean, recalcScale?: boolean } = false) => {
+  const resetRotation = typeof options === 'boolean' ? options : (options.resetRotation ?? false);
+  const recalcScale = typeof options === 'boolean' ? options : (options.recalcScale ?? false);
+  const player = getActivePlayer();
+  const video = player?.el().querySelector('video') as HTMLVideoElement | null;
+  if (!video) return;
+
+  if (noTransition.value) video.classList.add('no-transition');
+  else video.classList.remove('no-transition');
+
+  if (resetRotation) rotate.value = props.rotate;
+
+  const videoWidth = player?.videoWidth();
+  const videoHeight = player?.videoHeight();
+  const containerWidth = videoContainer.value?.clientWidth;
+  const containerHeight = videoContainer.value?.clientHeight;
+  const isRotated = rotate.value % 180 !== 0;
+
+  // IMPORTANT: Set dimensions to natural size to prevent clipping inside the tag
+  if (videoWidth && videoHeight) {
+    video.style.width = `${videoWidth}px`;
+    video.style.height = `${videoHeight}px`;
+  } else {
+    video.style.width = 'auto';
+    video.style.height = 'auto';
   }
-};
 
-const initPlayer = (index: number, url: string) => {
-  disposePlayer(index);
-  
-  const playerId = `vjs-player-${index}`;
-  const p = videojs(playerId, {
-    autoplay: config.settings.autoPlayVideo || props.isSlideShow,
-    controls: true,
-    fluid: true,
-    responsive: true,
-    muted: config.video.muted,
-    volume: config.video.volume,
-    sources: [{ src: convertFileSrc(url), type: 'video/mp4' }],
-    userActions: { doubleClick: true }
-  });
+  video.style.position = 'absolute';
+  video.style.top = '50%';
+  video.style.left = '50%';
+  video.style.objectFit = 'fill'; // Use fill since we handle the element size
+  video.style.transformOrigin = 'center center';
+  video.style.maxWidth = 'none';
+  video.style.maxHeight = 'none';
 
-  p.on('play', () => isPlaying.value = true);
-  p.on('pause', () => isPlaying.value = false);
-  p.on('ended', () => {
-    isPlaying.value = false;
-    if (props.isSlideShow) emit('slideshow-next');
-  });
-  p.on('error', () => {
-    hasError.value = true;
-    errorMessage.value = $t('video.errors.playback_failed') || 'Playback failed';
-  });
-  p.on('volumechange', () => {
-    config.video.volume = p.volume() || 0;
-    config.video.muted = p.muted() || false;
-  });
-
-  players.value[index] = p;
-};
-
-async function openInExternalApp() {
-  if (!props.filePath || !externalVideoAppPath.value) return;
-  await openFileWithApp(props.filePath, externalVideoAppPath.value);
-}
-
-async function loadVideo(filePath: string) {
-  currentLoadingId += 1;
-  const loadingId = currentLoadingId;
-  
-  isPreparing.value = true;
-  hasError.value = false;
-  errorMessage.value = '';
-  isPlaying.value = false;
-
-  try {
-    const result = await prepareVideo(filePath);
-    if (loadingId !== currentLoadingId) return;
-
-    videoUrl.value = result.url;
-    isTransitioning.value = true;
-    activeLayer.value ^= 1;
-    
-    // Dispose the OTHER layer's player
-    disposePlayer(activeLayer.value ^ 1);
-
-    await nextTick();
-    initPlayer(activeLayer.value, result.url);
-
-    noTransition.value = true;
-    isFit.value = props.isZoomFit;
+  if (recalcScale) {
     scale.value = 1;
-    rotate.value = props.rotate;
-    emitViewportChange();
-
-    setTimeout(() => {
-      noTransition.value = false;
-      isPreparing.value = false;
-    }, 100);
-  } catch (error: any) {
-    if (loadingId !== currentLoadingId) return;
-    isPreparing.value = false;
-    hasError.value = true;
-    errorMessage.value = error?.message || String(error);
+    if (isFit.value && videoWidth && videoHeight && containerWidth && containerHeight) {
+      const w = isRotated ? videoHeight : videoWidth;
+      const h = isRotated ? videoWidth : videoHeight;
+      scale.value = Math.min(containerWidth / w, containerHeight / h);
+    }
   }
-}
 
-const emitViewportChange = () => {
+  video.style.transform = `translate(-50%, -50%) rotate(${rotate.value}deg) scale(${scale.value})`;
+
   emit('scale', { scale: scale.value, minScale: 0.1, maxScale: 10 });
   emit('viewport-change', { scale: scale.value, isZoomFit: isFit.value, fileType: 2 });
 };
 
-defineExpose({
-  zoomIn: () => { scale.value = Math.min(scale.value * 2, 10); emitViewportChange(); },
-  zoomOut: () => { scale.value = Math.max(scale.value / 2, 0.1); emitViewportChange(); },
-  zoomActual: () => { scale.value = 1; emitViewportChange(); },
-  rotateRight: () => { rotate.value = (rotate.value + 90) % 360; emitViewportChange(); },
-  togglePlay: () => {
-    const p = players.value[activeLayer.value];
-    if (p) p.paused() ? p.play() : p.pause();
-  },
-  pause: () => players.value[activeLayer.value]?.pause(),
+const setupPlayer = (index: number) => {
+  const el = videoElements.value[index];
+  if (!el) return;
+  if (!players.value[index]) {
+    players.value[index] = videojs(el, playerOptions.value);
+    const player = players.value[index]!;
+    player.volume(config.video.volume);
+    player.muted(config.video.muted);
+
+    player.on('error', () => {
+      if (activeVideo.value === index) {
+        handlePlayerError(player);
+      }
+    });
+
+    player.on('play', () => {
+      if (activeVideo.value === index) {
+        isPlaying.value = true;
+        isReplaying.value = false;
+      }
+    });
+
+    player.on('pause', () => {
+      if (activeVideo.value === index) {
+        isPlaying.value = false;
+        isReplaying.value = false;
+      }
+    });
+
+    player.on('ended', () => {
+      if (activeVideo.value === index) {
+        isPlaying.value = false;
+        isReplaying.value = true;
+        if (props.isSlideShow) {
+          emit('slideshow-next');
+        }
+      }
+    });
+
+    player.on('volumechange', () => {
+      if (activeVideo.value === index) {
+        config.video.volume = player.volume();
+        config.video.muted = player.muted();
+      }
+    });
+  }
+};
+
+const clickPlayVideo = () => getActivePlayer()?.play();
+
+const loadVideo = async (filePath: string) => {
+  if (!filePath) return;
+  const currentLoadId = ++currentLoadingId;
+  const currentPlayer = getActivePlayer();
+  if (currentPlayer) {
+    currentPlayer.pause();
+    currentPlayer.reset();
+  }
+
+  const nextUpIndex = activeVideo.value ^ 1;
+  const player = players.value[nextUpIndex];
+  if (!player) return;
+
+  // Clear state
+  hasError.value = false;
+  isPlaying.value = false;
+  isReplaying.value = false;
+  isLoading.value = true;
+  showSpinner.value = false;
+  
+  setTimeout(() => {
+    if (currentLoadId === currentLoadingId && !hasError.value && activeVideo.value !== nextUpIndex) {
+      showSpinner.value = true;
+    }
+  }, 1000);
+
+  const handleSuccessfulLoad = () => {
+    if (currentLoadId !== currentLoadingId) return;
+    activeVideo.value = nextUpIndex;
+    hasError.value = false;
+    isLoading.value = false;
+    showSpinner.value = false;
+
+    // Pause the other player
+    const prevPlayer = players.value[nextUpIndex ^ 1];
+    if (prevPlayer) {
+      prevPlayer.pause();
+      prevPlayer.reset();
+    }
+
+    noTransition.value = true;
+    isFit.value = props.isZoomFit;
+    rotate.value = props.rotate;
+    updateTransform({ resetRotation: true, recalcScale: true });
+
+    setTimeout(() => {
+      noTransition.value = false;
+    }, 100);
+
+    if (config.settings.autoPlayVideo || props.isSlideShow) {
+      player.play().catch(() => {});
+    }
+  };
+
+  const tryPlayProcessed = async () => {
+    try {
+      // Force processing since direct play already failed
+      const result = await prepareVideo(filePath, String(nextUpIndex), "process");
+      if (currentLoadId !== currentLoadingId) return;
+
+      player.reset();
+      player.src({
+        src: getAssetSrc(result.url),
+        type: result.is_remuxed ? 'video/mp4' : undefined,
+      });
+
+      const onLoadedFallback = () => {
+        player.off('error', onErrorFallback);
+        handleSuccessfulLoad();
+      };
+
+      const onErrorFallback = () => {
+        if (currentLoadId !== currentLoadingId) return;
+        isLoading.value = false;
+        showSpinner.value = false;
+        handlePlayerError(player);
+        player.off('loadeddata', onLoadedFallback);
+        player.off('error', onErrorFallback);
+      };
+
+      player.one('loadeddata', onLoadedFallback);
+      player.one('error', onErrorFallback);
+      player.load();
+    } catch (e) {
+      if (currentLoadId !== currentLoadingId) return;
+      isLoading.value = false;
+      showSpinner.value = false;
+      console.error('[Video] Prepare failed:', e);
+      hasError.value = true;
+      errorMessage.value = getFallbackErrorMessage();
+    }
+  };
+
+  const tryPlayDirect = () => {
+    player.src({ src: getAssetSrc(filePath) });
+
+    const onLoadedDirect = () => {
+      player.off('error', onErrorDirect);
+      handleSuccessfulLoad();
+    };
+
+    const onErrorDirect = () => {
+      player.off('loadeddata', onLoadedDirect);
+      const err = player.error();
+      if (err && err.code === 1) {
+        return; // Aborted
+      }
+      if (currentLoadId !== currentLoadingId) return;
+      
+      console.warn('[Video] Direct play failed (code ' + err?.code + '), falling back to FFmpeg processing...');
+      tryPlayProcessed();
+    };
+
+    player.one('loadeddata', onLoadedDirect);
+    player.one('error', onErrorDirect);
+    player.load();
+  };
+
+  // Start by trying to play directly
+  tryPlayDirect();
+};
+
+function getFallbackErrorMessage() {
+  const formatMsg = $t('video.errors.format');
+  return canOpenExternalApp.value ? formatMsg : `${formatMsg}\n${$t('video.errors.use_external')}`;
+}
+
+function handlePlayerError(playerInstance: ReturnType<typeof videojs>) {
+  const err = playerInstance.error();
+  
+  // AbortError is frequently thrown locally when the stream is reset/cleared during transitions. 
+  // Ignoring it prevents spurious error overlays.
+  if (err && err.code === 1) {
+    return;
+  }
+
+  let msg = $t('video.errors.unknown');
+  
+  if (err) {
+    switch (err.code) {
+      case 1: msg = $t('video.errors.aborted'); break;
+      case 2: msg = $t('video.errors.network'); break;
+      case 3: msg = $t('video.errors.decode'); break;
+      case 4: msg = getFallbackErrorMessage(); break;
+    }
+  } else {
+    msg = $t('video.errors.playback_failed') || 'Playback failed';
+  }
+
+  hasError.value = true;
+  errorMessage.value = msg;
+  isPlaying.value = false;
+  isReplaying.value = false;
+}
+
+let resizeObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  nextTick(() => {
+    setupPlayer(0);
+    setupPlayer(1);
+    if (props.filePath) {
+      activeVideo.value = 0;
+      loadVideo(props.filePath);
+    }
+  });
+
+  if (videoContainer.value) {
+    resizeObserver = new ResizeObserver(() => {
+      updateTransform({ recalcScale: true });
+    });
+    resizeObserver.observe(videoContainer.value);
+  }
 });
 
-onMounted(() => { if (props.filePath) loadVideo(props.filePath); });
 onBeforeUnmount(() => {
-  players.value.forEach((_, i) => disposePlayer(i));
-  cancelVideoPrepare();
+  resizeObserver?.disconnect();
+  players.value.forEach((p) => {
+    if (p) {
+      p.off();
+      setTimeout(() => {
+        try { p.dispose(); } catch (e) {}
+      }, 0);
+    }
+  });
+  players.value = [null, null];
+  cancelVideoPrepare('0');
+  cancelVideoPrepare('1');
 });
 
-watch(() => props.filePath, (v) => v && loadVideo(v));
-watch(() => props.rotate, (v) => rotate.value = v);
+watch(() => props.filePath, (newPath) => {
+  if (newPath) loadVideo(newPath);
+});
+
+watch(() => props.rotate, (val) => {
+  rotate.value = val;
+  updateTransform();
+});
+
+watch(() => props.isZoomFit, (val) => {
+  isFit.value = val;
+  updateTransform({ recalcScale: true });
+});
+
+watch(() => props.isSlideShow, (newVal) => {
+  if (newVal) {
+    const player = getActivePlayer();
+    if (player && !isPlaying.value) {
+      player.play();
+    }
+  }
+});
+
+const zoomIn = () => {
+  scale.value = Math.min(scale.value * 2, 10);
+  updateTransform();
+};
+const zoomOut = () => {
+  scale.value = Math.max(scale.value / 2, 0.1);
+  updateTransform();
+};
+const zoomActual = () => {
+  scale.value = 1;
+  updateTransform();
+};
+const rotateRight = () => {
+  rotate.value = (rotate.value + 90) % 360;
+  updateTransform();
+};
+const togglePlay = () => {
+  const player = getActivePlayer();
+  if (!player) return;
+  if (isPlaying.value) player.pause();
+  else player.play();
+};
+
+function getViewportState() {
+  return { scale: scale.value, isZoomFit: isFit.value, fileType: 2 };
+}
+
+function applyViewportState(viewport: { scale?: number; isZoomFit?: boolean }, silent = false) {
+  if (!viewport) return;
+  if (typeof viewport.isZoomFit === 'boolean') {
+    isFit.value = viewport.isZoomFit;
+    if (viewport.isZoomFit) {
+      updateTransform({ recalcScale: true });
+      return;
+    }
+  }
+
+  if (typeof viewport.scale === 'number') {
+    scale.value = Math.max(0.1, Math.min(10, viewport.scale));
+    isFit.value = false;
+    if (silent) {
+      noTransition.value = true;
+      updateTransform();
+      requestAnimationFrame(() => {
+        noTransition.value = false;
+      });
+      return;
+    }
+    updateTransform();
+  }
+}
+
+defineExpose({
+  zoomIn,
+  zoomOut,
+  zoomActual,
+  rotateRight,
+  togglePlay,
+  getViewportState,
+  applyViewportState,
+  pause: () => {
+    players.value.forEach((p) => p?.pause());
+  },
+});
 
 function handleWheel(event: WheelEvent) {
   event.preventDefault();
-  if (event.deltaX !== 0) isTouchpadDevice = true;
+  if (event.deltaX !== 0) {
+    isTouchpadDevice = true;
+  }
+
   if (gestureResetTimeout) clearTimeout(gestureResetTimeout);
   gestureResetTimeout = setTimeout(() => {
-    gestureType.value = 'none'; horizontalDeltaAccumulator = 0; verticalDeltaAccumulator = 0; hasNavigatedThisGesture = false;
+    resetSwipeState();
   }, 150);
 
-  if (isTouchpadDevice) {
+  const isTouchPad = isTouchpadDevice;
+
+  if (isTouchPad) {
+    if (hasNavigatedThisGesture) {
+      const speedIncreased = Math.abs(event.deltaX) > Math.abs(lastDeltaX) + 5;
+      if (!speedIncreased) {
+        lastDeltaX = event.deltaX;
+        return;
+      }
+      hasNavigatedThisGesture = false;
+      horizontalDeltaAccumulator = 0;
+    }
+    lastDeltaX = event.deltaX;
+
     if (gestureType.value === 'none') {
       horizontalDeltaAccumulator += event.deltaX;
       verticalDeltaAccumulator += event.deltaY;
       const absX = Math.abs(horizontalDeltaAccumulator);
       const absY = Math.abs(verticalDeltaAccumulator);
-      if (absX > GESTURE_LOCK_THRESHOLD || absY > GESTURE_LOCK_THRESHOLD) gestureType.value = absX > absY ? 'nav' : 'zoom';
-    } else if (gestureType.value === 'nav') {
+      if (absX > GESTURE_LOCK_THRESHOLD || absY > GESTURE_LOCK_THRESHOLD) {
+        gestureType.value = absX > absY ? 'nav' : 'zoom';
+      }
+      return;
+    }
+
+    if (gestureType.value === 'nav') {
       horizontalDeltaAccumulator += event.deltaX;
       if (!hasNavigatedThisGesture && Math.abs(horizontalDeltaAccumulator) >= HORIZONTAL_NAV_THRESHOLD) {
         const direction = horizontalDeltaAccumulator > 0 ? 'next' : 'prev';
         navDirection.value = direction;
         emit('message-from-video-viewer', { message: direction });
         hasNavigatedThisGesture = true;
+        horizontalDeltaAccumulator = 0;
+        gestureType.value = 'none';
       }
-    } else {
-      const delta = -event.deltaY * 0.01;
+      return;
+    }
+
+    if (gestureType.value === 'zoom' || Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      const zoomFactor = 0.01;
+      const delta = -event.deltaY * zoomFactor;
       scale.value = Math.max(0.1, Math.min(10, scale.value + delta));
-      emitViewportChange();
+      updateTransform();
     }
   } else {
-    const zoomFactor = 0.1;
-    scale.value = event.deltaY < 0 ? Math.min(scale.value * (1 + zoomFactor), 10) : Math.max(scale.value * (1 - zoomFactor), 0.1);
-    emitViewportChange();
+    if (config.settings.mouseWheelMode === 0) {
+      if (event.ctrlKey) {
+        const zoomFactor = 0.1;
+        scale.value = event.deltaY < 0
+          ? Math.min(scale.value * (1 + zoomFactor), 10)
+          : Math.max(scale.value * (1 - zoomFactor), 0.1);
+        updateTransform();
+      } else {
+        const direction = event.deltaY < 0 ? 'prev' : 'next';
+        emit('message-from-video-viewer', { message: direction });
+      }
+    } else {
+      const zoomFactor = 0.1;
+      scale.value = event.deltaY < 0
+        ? Math.min(scale.value * (1 + zoomFactor), 10)
+        : Math.max(scale.value * (1 - zoomFactor), 0.1);
+      updateTransform();
+    }
   }
 }
 </script>
 
-<style scoped>
-.vjs-custom-container {
-  width: 100%;
-  max-width: 100%;
-  max-height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.3s ease-out;
+<style>
+.video-js {
+  width: 100% !important;
+  height: 100% !important;
+  background-color: transparent !important;
+  color: hsl(var(--bc)) !important;
 }
-.vjs-custom-container.no-transition {
-  transition: none;
+.video-js video {
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  transition: transform 0.3s ease-out !important;
 }
-
-:deep(.video-js) {
-  background-color: transparent;
+.video-js video.no-transition {
+  transition: none !important;
 }
-:deep(.vjs-tech) {
-  object-fit: contain;
+.video-js .vjs-control-bar {
+  background-color: hsl(var(--b2)) !important;
 }
-
-.slide-next-enter-active, .slide-next-leave-active { transition: transform 0.6s ease-in-out; }
+.video-js .vjs-big-play-button {
+  display: none !important;
+}
+.vjs-volume-panel {
+  position: relative !important;
+}
+.slide-next-enter-active,
+.slide-next-leave-active,
+.slide-prev-enter-active,
+.slide-prev-leave-active {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
 .slide-next-enter-from { transform: translateX(100%); }
 .slide-next-leave-to { transform: translateX(-100%); }
 .slide-prev-enter-from { transform: translateX(-100%); }
 .slide-prev-leave-to { transform: translateX(100%); }
+.slide-in-enter-active,
+.slide-in-leave-active {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-in-enter-from { transform: translateX(100%); }
+.slide-in-leave-to { transform: translateX(-100%); }
 </style>

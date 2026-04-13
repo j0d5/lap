@@ -510,51 +510,68 @@ enum VideoAction {
 }
 
 /// Precise codec probing to decide the best course of action.
-fn probe_video_action(file_path: &str) -> Result<VideoAction, String> {
-    ffmpeg::init().map_err(|e| format!("ffmpeg init error: {:?}", e))?;
-    let ictx = ffmpeg::format::input(&file_path).map_err(|e| format!("Failed to open file: {:?}", e))?;
+fn probe_video_action(file_path: &str) -> VideoAction {
+    let res = ffmpeg_catch_panic(file_path, "probe video action", || {
+        ffmpeg::init().map_err(|e| format!("ffmpeg init error: {:?}", e))?;
+        let ictx = ffmpeg::format::input(&file_path)
+            .map_err(|e| format!("Failed to open file: {:?}", e))?;
 
-    let format_name = ictx.format().name().to_lowercase();
-    let is_native_container = format_name.contains("mp4") || format_name.contains("mov") || format_name.contains("m4v");
-    
-    let video_stream = ictx.streams().best(ffmpeg::media::Type::Video).ok_or("No video stream")?;
-    let v_codec = video_stream.parameters().id();
-    
-    let is_video_compatible = match v_codec {
-        ffmpeg::codec::Id::H264 => true,
-        ffmpeg::codec::Id::HEVC | ffmpeg::codec::Id::VP9 => cfg!(target_os = "macos"),
-        _ => false,
-    };
+        let format_name = ictx.format().name().to_lowercase();
+        let is_native_container = format_name.contains("mp4")
+            || format_name.contains("mov")
+            || format_name.contains("m4v");
 
-    let audio_compatible = if let Some(audio_stream) = ictx.streams().best(ffmpeg::media::Type::Audio) {
-        match audio_stream.parameters().id() {
-            ffmpeg::codec::Id::AAC | ffmpeg::codec::Id::MP3 => true,
+        let video_stream = ictx
+            .streams()
+            .best(ffmpeg::media::Type::Video)
+            .ok_or("No video stream")?;
+        let v_codec = video_stream.parameters().id();
+
+        let is_video_compatible = match v_codec {
+            ffmpeg::codec::Id::H264 => true,
+            ffmpeg::codec::Id::HEVC | ffmpeg::codec::Id::VP9 => cfg!(target_os = "macos"),
             _ => false,
+        };
+
+        let audio_compatible =
+            if let Some(audio_stream) = ictx.streams().best(ffmpeg::media::Type::Audio) {
+                match audio_stream.parameters().id() {
+                    ffmpeg::codec::Id::AAC | ffmpeg::codec::Id::MP3 => true,
+                    _ => false,
+                }
+            } else {
+                true // No audio is compatible
+            };
+
+        if is_native_container && is_video_compatible && audio_compatible {
+            return Ok(VideoAction::Direct);
         }
-    } else {
-        true // No audio is compatible
-    };
 
-    if is_native_container && is_video_compatible && audio_compatible {
-        return Ok(VideoAction::Direct);
-    }
+        if is_video_compatible {
+            return Ok(VideoAction::Remux); // Video is fine, just container or audio needs fix
+        }
 
-    if is_video_compatible {
-        return Ok(VideoAction::Remux); // Video is fine, just container or audio needs fix
-    }
+        Ok(VideoAction::Transcode) // Video codec itself is incompatible
+    });
 
-    Ok(VideoAction::Transcode) // Video codec itself is incompatible
+    res.unwrap_or_else(|err| {
+        eprintln!(
+            "Probe failed: {}, falling back to Transcode to avoid browser crash",
+            err
+        );
+        VideoAction::Transcode
+    })
 }
 
 /// Global tracking of active ffmpeg processes to allow cancellation
 pub struct VideoManager {
-    pub active_process: Mutex<Option<Child>>,
+    pub active_processes: Mutex<std::collections::HashMap<String, Child>>,
 }
 
 impl Default for VideoManager {
     fn default() -> Self {
         Self {
-            active_process: Mutex::new(None),
+            active_processes: Mutex::new(std::collections::HashMap::new()),
         }
     }
 }
@@ -581,9 +598,12 @@ pub async fn clear_video_cache(app: AppHandle) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn cancel_video_prepare(state: tauri::State<'_, VideoManager>) -> Result<(), String> {
-    let mut process_guard = state.active_process.lock().unwrap();
-    if let Some(mut child) = process_guard.take() {
+pub async fn cancel_video_prepare(
+    state: tauri::State<'_, VideoManager>,
+    player_id: String,
+) -> Result<(), String> {
+    let mut process_guard = state.active_processes.lock().unwrap();
+    if let Some(mut child) = process_guard.remove(&player_id) {
         let _ = child.kill();
     }
     Ok(())
@@ -593,8 +613,10 @@ pub async fn cancel_video_prepare(state: tauri::State<'_, VideoManager>) -> Resu
 fn auto_cleanup_video_cache(cache_dir: &std::path::Path) {
     let max_size = 10 * 1024 * 1024 * 1024; // 10 GB
     let target_size = 7 * 1024 * 1024 * 1024; // Cleanup until 7 GB
-    
-    let Ok(entries) = std::fs::read_dir(cache_dir) else { return; };
+
+    let Ok(entries) = std::fs::read_dir(cache_dir) else {
+        return;
+    };
     let mut files: Vec<(std::path::PathBuf, u64, std::time::SystemTime)> = Vec::new();
     let mut current_total_size: u64 = 0;
 
@@ -636,7 +658,7 @@ fn touch_file(path: &std::path::Path) {
 fn get_cache_filename(file_path: &str) -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
     file_path.hash(&mut hasher);
     if let Ok(meta) = std::fs::metadata(file_path) {
@@ -653,22 +675,34 @@ pub async fn prepare_video(
     app: AppHandle,
     state: tauri::State<'_, VideoManager>,
     file_path: String,
+    player_id: String,
+    force: Option<String>,
 ) -> Result<VideoPrepareResult, String> {
     let path = Path::new(&file_path);
     if !path.exists() {
         return Err("File not found".to_string());
     }
 
-    // Kill any existing ffmpeg process for this player
+    // Kill any existing ffmpeg process for THIS specific player
     {
-        let mut process_guard = state.active_process.lock().unwrap();
-        if let Some(mut child) = process_guard.take() {
+        let mut process_guard = state.active_processes.lock().unwrap();
+        if let Some(mut child) = process_guard.remove(&player_id) {
             let _ = child.kill();
         }
     }
 
-    // 1. Precise Probing
-    let action = probe_video_action(&file_path)?;
+    // 1. Precise Probing offloaded to blocking thread
+    let file_path_clone = file_path.clone();
+    let mut action = tokio::task::spawn_blocking(move || probe_video_action(&file_path_clone))
+        .await
+        .map_err(|e| format!("Spawn blocking failed: {}", e))?;
+
+    if force.as_deref() == Some("process") && action == VideoAction::Direct {
+        // The frontend native playback failed. Plunging back to Direct means our probe was
+        // overly optimistic. Let's force a transcode to ensure playback.
+        action = VideoAction::Transcode;
+    }
+
     if action == VideoAction::Direct {
         return Ok(VideoPrepareResult {
             url: file_path,
@@ -700,25 +734,36 @@ pub async fn prepare_video(
     // 3. Execute FFmpeg based on probe
     let mut cmd = Command::new("ffmpeg");
     cmd.arg("-i").arg(&file_path);
-    
+
     if action == VideoAction::Remux {
-        cmd.arg("-c:v").arg("copy")
-           .arg("-c:a").arg("aac")
-           .arg("-b:a").arg("192k")
-           .arg("-map").arg("0:v:0")
-           .arg("-map").arg("0:a?");
+        cmd.arg("-c:v")
+            .arg("copy")
+            .arg("-c:a")
+            .arg("aac")
+            .arg("-b:a")
+            .arg("192k")
+            .arg("-map")
+            .arg("0:v:0")
+            .arg("-map")
+            .arg("0:a?");
     } else {
         // Transcode
-        cmd.arg("-c:v").arg("libx264")
-           .arg("-preset").arg("superfast")
-           .arg("-crf").arg("23")
-           .arg("-c:a").arg("aac")
-           .arg("-b:a").arg("192k");
+        cmd.arg("-c:v")
+            .arg("libx264")
+            .arg("-preset")
+            .arg("superfast")
+            .arg("-crf")
+            .arg("23")
+            .arg("-c:a")
+            .arg("aac")
+            .arg("-b:a")
+            .arg("192k");
     }
-    
-    cmd.arg("-movflags").arg("faststart")
-       .arg("-y")
-       .arg(&output_path);
+
+    cmd.arg("-movflags")
+        .arg("faststart")
+        .arg("-y")
+        .arg(&output_path);
 
     #[cfg(target_os = "windows")]
     {
@@ -726,20 +771,24 @@ pub async fn prepare_video(
         cmd.creation_flags(0x08000000);
     }
 
-    let child = cmd.spawn().map_err(|e| format!("Failed to spawn FFmpeg: {}", e))?;
-    
+    let child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn FFmpeg: {}", e))?;
+
     // Store handle for cancellation
     {
-        let mut process_guard = state.active_process.lock().unwrap();
-        *process_guard = Some(child);
+        let mut process_guard = state.active_processes.lock().unwrap();
+        process_guard.insert(player_id.clone(), child);
     }
 
     // Wait for the process to finish
     let final_status = loop {
         {
-            let mut process_guard = state.active_process.lock().unwrap();
-            if let Some(child) = process_guard.as_mut() {
+            let mut process_guard = state.active_processes.lock().unwrap();
+            if let Some(child) = process_guard.get_mut(&player_id) {
                 if let Ok(Some(status)) = child.try_wait() {
+                    // Remove from map before returning
+                    let _ = process_guard.remove(&player_id);
                     break status;
                 }
             } else {
@@ -752,7 +801,7 @@ pub async fn prepare_video(
     if final_status.success() {
         // Trigger cleanup after successful processing
         auto_cleanup_video_cache(&temp_dir);
-        
+
         Ok(VideoPrepareResult {
             url: output_path.to_string_lossy().to_string(),
             is_remuxed: true,
