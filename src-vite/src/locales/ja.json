@@ -754,8 +754,11 @@
       "aborted": "中止されました",
       "network": "ネットワークエラー",
       "decode": "デコードエラー",
-      "format": "非対応形式",
-      "timeout": "タイムアウト",
+      "format": "この動画は再生できません",
+      "open_in_external_app": "外部プレイヤーで開く",
+      "open_in_external_app_named": "{app} で開く...",
+      "use_external": "未対応の形式を開くには、設定で外部プレイヤーを設定してください。",
+      "use_external_with_app": "代わりに {app} で開いてみてください。",
       "unknown": "不明なエラー"
     }
   },

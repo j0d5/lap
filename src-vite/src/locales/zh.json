@@ -754,8 +754,11 @@
       "aborted": "视频加载被中止",
       "network": "网络错误导致视频下载失败",
       "decode": "视频解码错误",
-      "format": "视频格式不支持或文件损坏",
-      "timeout": "视频加载超时，视频格式不支持或文件损坏",
+      "format": "该视频无法播放",
+      "open_in_external_app": "使用外部播放器打开",
+      "open_in_external_app_named": "在 {app} 中打开...",
+      "use_external": "请在设置中配置外部播放器以打开不受支持的格式。",
+      "use_external_with_app": "请尝试在 {app} 中打开。",
       "unknown": "未知错误"
     }
   },

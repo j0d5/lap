@@ -38,6 +38,7 @@
           "$DOCUMENT/**",
           "$DESKTOP/**",
           "$DOWNLOAD/**",
+          "$APPCACHE/**",
           "/Volumes/**",
           "/media/**",
           "/mnt/**",

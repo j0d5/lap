@@ -9,6 +9,10 @@ use image::{DynamicImage, ImageFormat, RgbImage};
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::panic::{self, AssertUnwindSafe};
+use std::path::Path;
+use std::process::{Child, Command};
+use std::sync::Mutex;
+use tauri::{AppHandle, Manager};
 
 /// Upper bound on demuxed packets while extracting one video thumbnail.
 /// Corrupt or pathological files can otherwise iterate packets indefinitely.
@@ -28,14 +32,8 @@ fn ffmpeg_catch_panic<T>(
     match panic::catch_unwind(AssertUnwindSafe(op)) {
         Ok(inner) => inner,
         Err(_) => {
-            eprintln!(
-                "Panic caught during {} for video file: {}",
-                context, path
-            );
-            Err(format!(
-                "{}{}: {}",
-                FFMPEG_PANIC_ERR_PREFIX, context, path
-            ))
+            eprintln!("Panic caught during {} for video file: {}", context, path);
+            Err(format!("{}{}: {}", FFMPEG_PANIC_ERR_PREFIX, context, path))
         }
     }
 }
@@ -97,7 +95,10 @@ pub fn get_video_dimensions(file_path: &str) -> Result<(u32, u32), String> {
     }) {
         Ok(dims) => Ok(dims),
         Err(e) if is_ffmpeg_panic_err(&e) => {
-            eprintln!("Degrading video dimensions to 0×0 after FFmpeg panic: {}", e);
+            eprintln!(
+                "Degrading video dimensions to 0×0 after FFmpeg panic: {}",
+                e
+            );
             Ok((0, 0))
         }
         Err(e) => Err(e),
@@ -132,7 +133,9 @@ fn get_video_dimensions_inner(file_path: &str) -> Result<(u32, u32), String> {
 
 /// get video duration using ffmpeg
 pub fn get_video_duration(file_path: &str) -> Result<u64, String> {
-    match ffmpeg_catch_panic(file_path, "reading duration", || get_video_duration_inner(file_path)) {
+    match ffmpeg_catch_panic(file_path, "reading duration", || {
+        get_video_duration_inner(file_path)
+    }) {
         Ok(d) => Ok(d),
         Err(e) if is_ffmpeg_panic_err(&e) => {
             eprintln!("Degrading video duration to 0 after FFmpeg panic: {}", e);
@@ -324,10 +327,15 @@ pub struct VideoMetadata {
 }
 
 pub fn get_video_metadata(file_path: &str) -> Result<VideoMetadata, String> {
-    match ffmpeg_catch_panic(file_path, "reading metadata", || get_video_metadata_inner(file_path)) {
+    match ffmpeg_catch_panic(file_path, "reading metadata", || {
+        get_video_metadata_inner(file_path)
+    }) {
         Ok(m) => Ok(m),
         Err(e) if is_ffmpeg_panic_err(&e) => {
-            eprintln!("Degrading video metadata to empty after FFmpeg panic: {}", e);
+            eprintln!(
+                "Degrading video metadata to empty after FFmpeg panic: {}",
+                e
+            );
             Ok(VideoMetadata::default())
         }
         Err(e) => Err(e),
@@ -442,7 +450,6 @@ fn get_video_metadata_inner(file_path: &str) -> Result<VideoMetadata, String> {
     Ok(m)
 }
 
-
 /// Pick the first valid entry from a list of possible tag keys
 fn first_exist(meta: &HashMap<String, String>, keys: &[&str]) -> Option<String> {
     for key in keys {
@@ -480,5 +487,326 @@ fn parse_apple_iso6709(raw: &str, m: &mut VideoMetadata) {
     }
     if parts.len() >= 3 {
         m.gps_altitude = parts[2].parse().ok();
+    }
+}
+
+/// --------------------------------------------------------------------------
+/// Video Preparation for Native <video> Playback
+/// --------------------------------------------------------------------------
+
+#[derive(serde::Serialize)]
+pub struct VideoPrepareResult {
+    pub url: String,
+    pub is_remuxed: bool,
+}
+
+/// Check if the video is natively playable by WebKit on macOS.
+
+#[derive(Debug, PartialEq)]
+enum VideoAction {
+    Direct,
+    Remux,
+    Transcode,
+}
+
+/// Precise codec probing to decide the best course of action.
+fn probe_video_action(file_path: &str) -> VideoAction {
+    let res = ffmpeg_catch_panic(file_path, "probe video action", || {
+        ffmpeg::init().map_err(|e| format!("ffmpeg init error: {:?}", e))?;
+        let ictx = ffmpeg::format::input(&file_path)
+            .map_err(|e| format!("Failed to open file: {:?}", e))?;
+
+        let format_name = ictx.format().name().to_lowercase();
+        let is_native_container = format_name.contains("mp4")
+            || format_name.contains("mov")
+            || format_name.contains("m4v");
+
+        let video_stream = ictx
+            .streams()
+            .best(ffmpeg::media::Type::Video)
+            .ok_or("No video stream")?;
+        let v_codec = video_stream.parameters().id();
+
+        let is_video_compatible = match v_codec {
+            ffmpeg::codec::Id::H264 => true,
+            ffmpeg::codec::Id::HEVC | ffmpeg::codec::Id::VP9 => cfg!(target_os = "macos"),
+            _ => false,
+        };
+
+        let audio_compatible =
+            if let Some(audio_stream) = ictx.streams().best(ffmpeg::media::Type::Audio) {
+                match audio_stream.parameters().id() {
+                    ffmpeg::codec::Id::AAC | ffmpeg::codec::Id::MP3 => true,
+                    _ => false,
+                }
+            } else {
+                true // No audio is compatible
+            };
+
+        if is_native_container && is_video_compatible && audio_compatible {
+            return Ok(VideoAction::Direct);
+        }
+
+        if is_video_compatible {
+            return Ok(VideoAction::Remux); // Video is fine, just container or audio needs fix
+        }
+
+        Ok(VideoAction::Transcode) // Video codec itself is incompatible
+    });
+
+    res.unwrap_or_else(|err| {
+        eprintln!(
+            "Probe failed: {}, falling back to Transcode to avoid browser crash",
+            err
+        );
+        VideoAction::Transcode
+    })
+}
+
+/// Global tracking of active ffmpeg processes to allow cancellation
+pub struct VideoManager {
+    pub active_processes: Mutex<std::collections::HashMap<String, Child>>,
+}
+
+impl Default for VideoManager {
+    fn default() -> Self {
+        Self {
+            active_processes: Mutex::new(std::collections::HashMap::new()),
+        }
+    }
+}
+
+pub fn init_video_cache(app: &AppHandle) {
+    if let Ok(temp_dir) = app.path().app_cache_dir().map(|d| d.join("video_cache")) {
+        // Option 1: Cleanup orphaned or old files (placeholder for more complex logic)
+        // For now, we will simply NOT clear everything, enabling persistence.
+        if !temp_dir.exists() {
+            let _ = std::fs::create_dir_all(&temp_dir);
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn clear_video_cache(app: AppHandle) -> Result<(), String> {
+    if let Ok(temp_dir) = app.path().app_cache_dir().map(|d| d.join("video_cache")) {
+        if temp_dir.exists() {
+            std::fs::remove_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+            std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn cancel_video_prepare(
+    state: tauri::State<'_, VideoManager>,
+    player_id: String,
+) -> Result<(), String> {
+    let mut process_guard = state.active_processes.lock().unwrap();
+    if let Some(mut child) = process_guard.remove(&player_id) {
+        let _ = child.kill();
+    }
+    Ok(())
+}
+
+/// Automatically cleanup video cache if it exceeds 10GB.
+fn auto_cleanup_video_cache(cache_dir: &std::path::Path) {
+    let max_size = 10 * 1024 * 1024 * 1024; // 10 GB
+    let target_size = 7 * 1024 * 1024 * 1024; // Cleanup until 7 GB
+
+    let Ok(entries) = std::fs::read_dir(cache_dir) else {
+        return;
+    };
+    let mut files: Vec<(std::path::PathBuf, u64, std::time::SystemTime)> = Vec::new();
+    let mut current_total_size: u64 = 0;
+
+    for entry in entries.flatten() {
+        if let Ok(meta) = entry.metadata() {
+            if meta.is_file() {
+                let mtime = meta.modified().unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+                current_total_size += meta.len();
+                files.push((entry.path(), meta.len(), mtime));
+            }
+        }
+    }
+
+    if current_total_size <= max_size {
+        return;
+    }
+
+    // Sort by modified time: oldest first
+    files.sort_by_key(|f| f.2);
+
+    for (path, size, _) in files {
+        if current_total_size <= target_size {
+            break;
+        }
+        if std::fs::remove_file(&path).is_ok() {
+            current_total_size -= size;
+        }
+    }
+}
+
+/// "Touch" a file to update its modified time (for LRU logic).
+fn touch_file(path: &std::path::Path) {
+    let _ = std::fs::OpenOptions::new()
+        .write(true)
+        .open(path)
+        .and_then(|file| file.set_modified(std::time::SystemTime::now()));
+}
+
+fn get_cache_filename(file_path: &str) -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+
+    let mut hasher = DefaultHasher::new();
+    file_path.hash(&mut hasher);
+    if let Ok(meta) = std::fs::metadata(file_path) {
+        if let Ok(mod_time) = meta.modified() {
+            mod_time.hash(&mut hasher);
+        }
+        meta.len().hash(&mut hasher);
+    }
+    format!("{:x}.mp4", hasher.finish())
+}
+
+#[tauri::command]
+pub async fn prepare_video(
+    app: AppHandle,
+    state: tauri::State<'_, VideoManager>,
+    file_path: String,
+    player_id: String,
+    force: Option<String>,
+) -> Result<VideoPrepareResult, String> {
+    let path = Path::new(&file_path);
+    if !path.exists() {
+        return Err("File not found".to_string());
+    }
+
+    // Kill any existing ffmpeg process for THIS specific player
+    {
+        let mut process_guard = state.active_processes.lock().unwrap();
+        if let Some(mut child) = process_guard.remove(&player_id) {
+            let _ = child.kill();
+        }
+    }
+
+    // 1. Precise Probing offloaded to blocking thread
+    let file_path_clone = file_path.clone();
+    let mut action = tokio::task::spawn_blocking(move || probe_video_action(&file_path_clone))
+        .await
+        .map_err(|e| format!("Spawn blocking failed: {}", e))?;
+
+    if force.as_deref() == Some("process") && action == VideoAction::Direct {
+        // The frontend native playback failed. Plunging back to Direct means our probe was
+        // overly optimistic. Let's force a transcode to ensure playback.
+        action = VideoAction::Transcode;
+    }
+
+    if action == VideoAction::Direct {
+        return Ok(VideoPrepareResult {
+            url: file_path,
+            is_remuxed: false,
+        });
+    }
+
+    // 2. Cache Check
+    let temp_dir = app
+        .path()
+        .app_cache_dir()
+        .map_err(|e| e.to_string())?
+        .join("video_cache");
+    if !temp_dir.exists() {
+        std::fs::create_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+    }
+
+    let cache_name = get_cache_filename(&file_path);
+    let output_path = temp_dir.join(&cache_name);
+
+    if output_path.exists() {
+        touch_file(&output_path);
+        return Ok(VideoPrepareResult {
+            url: output_path.to_string_lossy().to_string(),
+            is_remuxed: true,
+        });
+    }
+
+    // 3. Execute FFmpeg based on probe
+    let mut cmd = Command::new("ffmpeg");
+    cmd.arg("-i").arg(&file_path);
+
+    if action == VideoAction::Remux {
+        cmd.arg("-c:v")
+            .arg("copy")
+            .arg("-c:a")
+            .arg("aac")
+            .arg("-b:a")
+            .arg("192k")
+            .arg("-map")
+            .arg("0:v:0")
+            .arg("-map")
+            .arg("0:a?");
+    } else {
+        // Transcode
+        cmd.arg("-c:v")
+            .arg("libx264")
+            .arg("-preset")
+            .arg("superfast")
+            .arg("-crf")
+            .arg("23")
+            .arg("-c:a")
+            .arg("aac")
+            .arg("-b:a")
+            .arg("192k");
+    }
+
+    cmd.arg("-movflags")
+        .arg("faststart")
+        .arg("-y")
+        .arg(&output_path);
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+
+    let child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn FFmpeg: {}", e))?;
+
+    // Store handle for cancellation
+    {
+        let mut process_guard = state.active_processes.lock().unwrap();
+        process_guard.insert(player_id.clone(), child);
+    }
+
+    // Wait for the process to finish
+    let final_status = loop {
+        {
+            let mut process_guard = state.active_processes.lock().unwrap();
+            if let Some(child) = process_guard.get_mut(&player_id) {
+                if let Ok(Some(status)) = child.try_wait() {
+                    // Remove from map before returning
+                    let _ = process_guard.remove(&player_id);
+                    break status;
+                }
+            } else {
+                return Err("Process cancelled".to_string());
+            }
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    };
+
+    if final_status.success() {
+        // Trigger cleanup after successful processing
+        auto_cleanup_video_cache(&temp_dir);
+
+        Ok(VideoPrepareResult {
+            url: output_path.to_string_lossy().to_string(),
+            is_remuxed: true,
+        })
+    } else {
+        Err("FFmpeg processing failed".to_string())
     }
 }

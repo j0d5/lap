@@ -754,8 +754,11 @@
       "aborted": "Abgebrochen",
       "network": "Netzwerkfehler",
       "decode": "Dekodierfehler",
-      "format": "Nicht unterstützt",
-      "timeout": "Zeitüberschreitung",
+      "format": "Dieses Video konnte nicht abgespielt werden",
+      "open_in_external_app": "In externem Player öffnen",
+      "open_in_external_app_named": "Video in {app} öffnen...",
+      "use_external": "Um nicht unterstützte Formate zu öffnen, konfigurieren Sie einen externen Player in den Einstellungen.",
+      "use_external_with_app": "Versuchen Sie stattdessen, es in {app} zu öffnen.",
       "unknown": "Unbekannter Fehler"
     }
   },

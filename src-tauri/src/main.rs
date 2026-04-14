@@ -59,6 +59,7 @@ async fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(t_video::VideoManager::default())
         .manage(t_ai::AiState(std::sync::Mutex::new(t_ai::AiEngine::new())))
         .manage(t_face::FaceState(std::sync::Arc::new(
             std::sync::Mutex::new(t_face::FaceEngine::new()),
@@ -96,6 +97,9 @@ async fn main() {
             if let Err(e) = t_sqlite::create_db() {
                 eprintln!("Failed to initialize database: {}", e);
             }
+
+            // Cleanup video cache
+            t_video::init_video_cache(&_app.handle());
 
             if let Err(e) = t_utils::restore_album_scopes(&_app.handle()) {
                 eprintln!("Failed to restore asset scopes: {}", e);
@@ -261,6 +265,10 @@ async fn main() {
             t_cmds::dedup_get_group,
             t_cmds::dedup_set_keep,
             t_cmds::dedup_delete_selected,
+            // video
+            t_video::prepare_video,
+            t_video::cancel_video_prepare,
+            t_video::clear_video_cache,
         ])
         .build(tauri::generate_context!());
 
