@@ -71,11 +71,6 @@ uuid = { version = "1", features = ["v4"] }
 blake3 = "1.8.3"
 jxl-oxide = { version = "0.12.5", features = ["image"] }
 
-[target.'cfg(target_os = "windows")'.dependencies]
-ffmpeg-next = { version = "8.1.0" }
-
-[target.'cfg(not(target_os = "windows"))'.dependencies]
-ffmpeg-next = { version = "8.1.0", features = ["static", "build"] }
 
 
 [features]

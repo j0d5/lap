@@ -920,7 +920,7 @@ fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>, Strin
         }
         #[cfg(not(target_os = "macos"))]
         {
-            return t_video::get_video_thumbnail(file_path, 4096);
+            return t_video::get_video_thumbnail(file_path, 4096, None).await;
         }
     }
 
@@ -1293,7 +1293,7 @@ pub async fn get_file_image_bytes_cached(file_path: &str) -> Result<Vec<u8>, Str
         }
         #[cfg(not(target_os = "macos"))]
         {
-            t_video::get_video_thumbnail(file_path, 4096)?
+            t_video::get_video_thumbnail(file_path, 4096, None).await?
                 .ok_or_else(|| format!("Failed to resolve HEIC preview image: {}", file_path))?
         }
     } else if crate::t_libraw::is_tiff_path(file_path) {

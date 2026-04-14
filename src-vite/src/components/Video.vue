@@ -245,9 +245,9 @@ const setupPlayer = (index: number) => {
     });
 
     player.on('volumechange', () => {
-      if (activeVideo.value === index) {
-        config.video.volume = player.volume();
-        config.video.muted = player.muted();
+      if (activeVideo.value === index && !isLoading.value) {
+        config.setVideoVolume(player.volume());
+        config.setVideoMuted(player.muted());
       }
     });
   }
@@ -258,6 +258,14 @@ const clickPlayVideo = () => getActivePlayer()?.play();
 const loadVideo = async (filePath: string) => {
   if (!filePath) return;
   const currentLoadId = ++currentLoadingId;
+  
+  // IMMEDIATELY set loading state to block volumechange feedbacks from old players
+  hasError.value = false;
+  isPlaying.value = false;
+  isReplaying.value = false;
+  isLoading.value = true;
+  showSpinner.value = false;
+
   const currentPlayer = getActivePlayer();
   if (currentPlayer) {
     currentPlayer.pause();
@@ -268,12 +276,9 @@ const loadVideo = async (filePath: string) => {
   const player = players.value[nextUpIndex];
   if (!player) return;
 
-  // Clear state
-  hasError.value = false;
-  isPlaying.value = false;
-  isReplaying.value = false;
-  isLoading.value = true;
-  showSpinner.value = false;
+  // Sync audio state IMMEDIATELY so the UI reflects the user settings during loading
+  player.muted(config.video.muted);
+  player.volume(config.video.volume);
   
   setTimeout(() => {
     if (currentLoadId === currentLoadingId && !hasError.value && activeVideo.value !== nextUpIndex) {
@@ -305,7 +310,13 @@ const loadVideo = async (filePath: string) => {
     }, 100);
 
     if (config.settings.autoPlayVideo || props.isSlideShow) {
+      // Restore user audio settings right before playback starts
+      player.volume(config.video.volume);
+      player.muted(config.video.muted);
       player.play().catch(() => {});
+    } else {
+      player.volume(config.video.volume);
+      player.muted(config.video.muted);
     }
   };
 
@@ -373,8 +384,15 @@ const loadVideo = async (filePath: string) => {
     player.load();
   };
 
-  // Start by trying to play directly
-  tryPlayDirect();
+  // Start by checking if we should skip direct play for problematic formats
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  // TODO: Remove this when we support MPG/MPEG
+  if (ext === 'mpg' || ext === 'mpeg') {
+    console.warn('[Video] Skipping direct play for legacy format:', ext);
+    tryPlayProcessed();
+  } else {
+    tryPlayDirect();
+  }
 };
 
 function getFallbackErrorMessage() {

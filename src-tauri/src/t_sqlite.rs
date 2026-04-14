@@ -680,7 +680,7 @@ impl AFile {
 
         // get duration of video file
         let duration = match file_type {
-            2 => t_video::get_video_duration(file_path)? as i64,
+            2 => t_video::get_video_duration_sync(file_path)? as i64,
             _ => 0,
         };
         let format_label = t_utils::detect_file_format_label(file_path, file_type);
@@ -2302,7 +2302,7 @@ impl AThumb {
                                 Err(_) => (None, 1),   // error
                             }
                             #[cfg(not(target_os = "macos"))]
-                            match t_video::get_video_thumbnail(file_path, thumbnail_size) {
+                            match t_video::get_video_thumbnail_sync(file_path, thumbnail_size, None) {
                                 Ok(Some(data)) => (Some(data), 0),
                                 Ok(None) => (None, 1), // empty thumb
                                 Err(_) => (None, 1),   // error
@@ -2327,7 +2327,7 @@ impl AThumb {
             }
             2 => {
                 // video
-                match t_video::get_video_thumbnail(file_path, thumbnail_size) {
+                match t_video::get_video_thumbnail_sync(file_path, thumbnail_size, None) {
                     Ok(Some(data)) => (Some(data), 0),
                     Ok(None) => (None, 1),
                     Err(_) => (None, 1),
