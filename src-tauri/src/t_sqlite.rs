@@ -11,14 +11,13 @@ use crate::t_lens;
 use crate::t_utils;
 use crate::t_video;
 use base64::{Engine, engine::general_purpose};
-use exif::{In, Reader, Tag, Value};
+use exif::{In, Tag, Value};
 use image::{GenericImageView, ImageFormat};
 use rusqlite::{Connection, OptionalExtension, Result, ToSql, params};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::fs::File;
-use std::io::{BufReader, Cursor};
+use std::io::Cursor;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
@@ -734,20 +733,8 @@ impl AFile {
 
         if file_type == 1 || file_type == 3 {
             // Image file
-            // Read EXIF data
-            let exif = File::open(file_path)
-                .map_err(|e| format!("Error opening file: {}", e))
-                .map(|file| {
-                    let mut bufreader = BufReader::new(&file);
-                    // Catch unwind in case of corrupted EXIF panic
-                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        Reader::new().read_from_container(&mut bufreader).ok()
-                    }))
-                    .unwrap_or_else(|_| {
-                        eprintln!("Panic caught while parsing EXIF for: {}", file_path);
-                        None
-                    })
-                })?;
+            // Read EXIF data using permissive reader
+            let exif = t_image::read_exif_permissive(file_path);
 
             // Extracts EXIF orientation field.
             // 1: Horizontal (normal)
@@ -761,9 +748,26 @@ impl AFile {
             e_orientation = exif.as_ref().and_then(|exif_data| {
                 exif_data
                     .get_field(Tag::Orientation, In::PRIMARY)
-                    .and_then(|field| field.value.get_uint(0)) // Return u64 directly
-                    .or(Some(1)) // If no orientation is found, default to 1 (normal orientation)
+                    .or_else(|| exif_data.fields().find(|f| f.tag == Tag::Orientation))
+                    .and_then(|field| field.value.get_uint(0))
+                    .map(|v| v as u32)
             });
+
+            // 2. Binary Scan Fallback if still None or 1
+            if e_orientation.is_none() || e_orientation == Some(1) {
+                if let Ok(mut f) = std::fs::File::open(file_path) {
+                    let mut buf = vec![0u8; 128 * 1024];
+                    use std::io::Read;
+                    let n = f.read(&mut buf).unwrap_or(0);
+                    if let Some(bo) = t_image::scan_orientation_binary(&buf[..n]) {
+                        e_orientation = Some(bo as u32);
+                    }
+                }
+            }
+
+            if e_orientation.is_none() {
+                e_orientation = Some(1);
+            }
 
             // Process flash data
             e_flash = exif.as_ref().and_then(|exif_data| {
@@ -809,6 +813,41 @@ impl AFile {
                 if let Some(model) = e_lens_model.as_deref() {
                     e_lens_make = t_lens::infer_lens_make(model).map(|s| s.to_string());
                 }
+            }
+
+            // Binary String Fallback if metadata is still missing (Industry standard for tough files)
+            if e_make.is_none() || e_model.is_none() || e_date_time.is_none() {
+                if let Ok(mut f) = std::fs::File::open(file_path) {
+                    let mut buf = vec![0u8; 128 * 1024];
+                    use std::io::Read;
+                    let n = f.read(&mut buf).unwrap_or(0);
+                    let data = &buf[..n];
+
+                    if e_make.is_none() { e_make = Self::scrape_ascii_from_tag(data, 0x010f); }
+                    if e_model.is_none() { e_model = Self::scrape_ascii_from_tag(data, 0x0110); }
+                    if e_date_time.is_none() {
+                        e_date_time = Self::scrape_ascii_from_tag(data, 0x9003)
+                            .or_else(|| Self::scrape_ascii_from_tag(data, 0x0132));
+                    }
+                    if e_software.is_none() { e_software = Self::scrape_ascii_from_tag(data, 0x0131); }
+                    if e_lens_model.is_none() { e_lens_model = Self::scrape_ascii_from_tag(data, 0xa434); }
+                    
+                    // Extra Orientation fallback for Sony MakerNotes (Tag 0x2000)
+                    if e_orientation.is_none() || e_orientation == Some(1) {
+                        if let Some(so) = Self::scrape_u16_from_tag(data, 0x2000) {
+                             if (1..=8).contains(&so) { e_orientation = Some(so as u32); }
+                        }
+                    }
+                }
+            }
+            
+            // Re-update taken_date if we found e_date_time via binary fallback
+            if taken_date == file_info.modified {
+                 if let Some(dt) = e_date_time.as_ref() {
+                     if let Some(ts) = t_utils::meta_date_to_timestamp(dt) {
+                         taken_date = Some(ts);
+                     }
+                 }
             }
         } else if file_type == 2 {
             taken_date = e_date_time
@@ -903,21 +942,25 @@ impl AFile {
 
         let lat_val = exif_data
             .get_field(Tag::GPSLatitude, In::PRIMARY)
+            .or_else(|| exif_data.fields().find(|f| f.tag == Tag::GPSLatitude))
             .and_then(|f| match &f.value {
                 Value::Rational(v) => Some(v.to_vec()),
                 _ => None,
             });
         let lat_ref = exif_data
             .get_field(Tag::GPSLatitudeRef, In::PRIMARY)
+            .or_else(|| exif_data.fields().find(|f| f.tag == Tag::GPSLatitudeRef))
             .map(|f| f.display_value().to_string());
         let lon_val = exif_data
             .get_field(Tag::GPSLongitude, In::PRIMARY)
+            .or_else(|| exif_data.fields().find(|f| f.tag == Tag::GPSLongitude))
             .and_then(|f| match &f.value {
                 Value::Rational(v) => Some(v.to_vec()),
                 _ => None,
             });
         let lon_ref = exif_data
             .get_field(Tag::GPSLongitudeRef, In::PRIMARY)
+            .or_else(|| exif_data.fields().find(|f| f.tag == Tag::GPSLongitudeRef))
             .map(|f| f.display_value().to_string());
 
         let (gps_lat, gps_lon) = if let (Some(lat_v), Some(lat_r), Some(lon_v), Some(lon_r)) =
@@ -971,7 +1014,9 @@ impl AFile {
 
     /// Extracts an EXIF field as a string.
     pub fn get_exif_field(exif: &Option<exif::Exif>, tag: Tag) -> Option<String> {
-        let field = exif.as_ref()?.get_field(tag, In::PRIMARY)?;
+        let ex = exif.as_ref()?;
+        let field = ex.get_field(tag, In::PRIMARY)
+            .or_else(|| ex.fields().find(|f| f.tag == tag))?;
 
         let raw = match &field.value {
             Value::Ascii(vec) => {
@@ -1063,6 +1108,74 @@ impl AFile {
         } else {
             Some(final_str.to_string())
         }
+    }
+
+    fn scrape_ascii_from_tag(data: &[u8], tag_id: u16) -> Option<String> {
+        // Find the TIFF base (where the EXIF/TIFF header starts)
+        let tiff_base = data.windows(4).position(|w| w == b"II\x2a\x00" || w == b"MM\x00\x2a")?;
+        
+        let target_le = [(tag_id & 0xFF) as u8, (tag_id >> 8) as u8, 0x02, 0x00];
+        let target_be = [(tag_id >> 8) as u8, (tag_id & 0xFF) as u8, 0x00, 0x02];
+
+        for (is_le, target) in [(true, target_le), (false, target_be)] {
+            if let Some(pos) = data.windows(12).position(|w| w.starts_with(&target)) {
+                let count = if is_le {
+                    u32::from_le_bytes(data[pos + 4..pos + 8].try_into().ok()?)
+                } else {
+                    u32::from_be_bytes(data[pos + 4..pos + 8].try_into().ok()?)
+                } as usize;
+
+                if count > 1 && count < 256 {
+                    let mut start = if is_le {
+                        u32::from_le_bytes(data[pos + 8..pos + 12].try_into().ok()?)
+                    } else {
+                        u32::from_be_bytes(data[pos + 8..pos + 12].try_into().ok()?)
+                    } as usize;
+
+                    // If count <= 4, the value is stored directly in the offset field
+                    if count <= 4 {
+                        start = pos + 8;
+                    } else {
+                        // Offset is relative to TIFF header start
+                        start += tiff_base;
+                    }
+
+                    if start + count <= data.len() {
+                        let bytes = &data[start..start + (count - 1).min(count)]; // Skip null terminator
+                        let s = String::from_utf8_lossy(bytes)
+                            .trim()
+                            .trim_matches('\0')
+                            .trim()
+                            .to_string();
+                        if !s.is_empty()
+                            && s.chars()
+                                .all(|c| c.is_ascii_graphic() || c.is_whitespace())
+                        {
+                            return Some(s);
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Helper to scrape U16 values (like Orientation) from raw bytes
+    fn scrape_u16_from_tag(data: &[u8], tag_id: u16) -> Option<u16> {
+        let target_le = [(tag_id & 0xFF) as u8, (tag_id >> 8) as u8, 0x03, 0x00];
+        let target_be = [(tag_id >> 8) as u8, (tag_id & 0xFF) as u8, 0x00, 0x03];
+
+        for (is_le, target) in [(true, target_le), (false, target_be)] {
+            if let Some(pos) = data.windows(12).position(|w| w.starts_with(&target)) {
+                let val = if is_le {
+                    u16::from_le_bytes(data[pos + 8..pos + 10].try_into().ok()?)
+                } else {
+                    u16::from_be_bytes(data[pos + 8..pos + 10].try_into().ok()?)
+                };
+                return Some(val);
+            }
+        }
+        None
     }
 
     /// insert a file into db

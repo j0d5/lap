@@ -18,8 +18,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::fs::File;
-use std::io::BufReader;
-use std::io::Cursor;
+use std::io::{BufReader, Cursor, Read};
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -69,11 +68,10 @@ pub fn get_image_dimensions(file_path: &str) -> Result<(u32, u32), String> {
 }
 
 fn get_raw_dimensions_from_exif(file_path: &str) -> Result<Option<(u32, u32)>, String> {
-    let file = File::open(file_path).map_err(|e| format!("Failed to open RAW image: {}", e))?;
-    let mut reader = BufReader::new(file);
-    let exif = Reader::new()
-        .read_from_container(&mut reader)
-        .map_err(|e| format!("Failed to parse EXIF dimensions: {}", e))?;
+    let exif = match read_exif_permissive(file_path) {
+        Some(exif) => exif,
+        None => return Ok(None),
+    };
 
     let dimension_tag_pairs = [
         (Tag::PixelXDimension, Tag::PixelYDimension),
@@ -98,21 +96,126 @@ fn get_raw_dimensions_from_exif(file_path: &str) -> Result<Option<(u32, u32)>, S
     Ok(None)
 }
 
+pub fn read_exif_from_bytes_permissive(data: &[u8]) -> Option<exif::Exif> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let mut cursor = Cursor::new(data);
+        if let Ok(exif) = Reader::new().read_from_container(&mut cursor) {
+            return Some(exif);
+        }
+        if let Some(pos) = data.windows(6).position(|w| w == b"Exif\0\0") {
+            let exif_start = pos + 6;
+            if exif_start < data.len() {
+                if let Ok(exif) = Reader::new().read_raw(data[exif_start..].to_vec()) {
+                    return Some(exif);
+                }
+            }
+        }
+        for sig in [b"II\x2a\x00", b"MM\x00\x2a"] {
+            if let Some(pos) = data.windows(4).position(|w| w == sig) {
+                if let Ok(exif) = Reader::new().read_raw(data[pos..].to_vec()) {
+                    return Some(exif);
+                }
+            }
+        }
+        None
+    }))
+    .unwrap_or_else(|_| None)
+}
+
+/// A very aggressive binary scanner that looks for the EXIF Orientation tag (0x0112)
+/// directly in the byte stream. This is used as a final fallback for non-standard devices.
+pub fn scan_orientation_binary(data: &[u8]) -> Option<i32> {
+    // Orientation tag is 0x0112. In TIFF, it's a Short (3) with Count 1.
+    // Little Endian: 12 01 03 00 01 00 00 00 [Value] 00 00 00
+    // Big Endian:    01 12 00 03 00 00 00 01 00 [Value] 00 00
+    
+    // Little Endian search
+    if let Some(pos) = data.windows(12).position(|w| {
+        w[0..8] == [0x12, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00]
+    }) {
+        let val = data[pos + 8] as i32;
+        if (1..=8).contains(&val) { return Some(val); }
+    }
+    
+    // Big Endian search
+    if let Some(pos) = data.windows(12).position(|w| {
+        w[0..8] == [0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01]
+    }) {
+        let val = data[pos + 9] as i32;
+        if (1..=8).contains(&val) { return Some(val); }
+    }
+    
+    None
+}
+
+pub fn read_exif_permissive(file_path: &str) -> Option<exif::Exif> {
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        use std::io::{Read, Seek};
+        let mut file = File::open(file_path).ok()?;
+        let mut header = [0u8; 2];
+        file.read_exact(&mut header).ok()?;
+        
+        if header != [0xFF, 0xD8] { return None; }
+
+        loop {
+            let mut marker = [0u8; 2];
+            if file.read_exact(&mut marker).is_err() { break; }
+            if marker[0] != 0xFF { break; }
+            if marker[1] == 0xD9 || marker[1] == 0xDA { break; } 
+
+            let mut len_bytes = [0u8; 2];
+            if file.read_exact(&mut len_bytes).is_err() { break; }
+            let len = u16::from_be_bytes(len_bytes) as usize;
+            if len < 2 { break; }
+            let segment_len = len - 2;
+            
+            if marker[1] == 0xE1 { // APP1
+                let mut segment_data = vec![0u8; segment_len];
+                if file.read_exact(&mut segment_data).is_err() { break; }
+                if segment_data.starts_with(b"Exif\0\0") {
+                    if let Ok(exif) = Reader::new().read_raw(segment_data[6..].to_vec()) {
+                        return Some(exif);
+                    }
+                }
+            } else {
+                if file.seek(std::io::SeekFrom::Current(segment_len as i64)).is_err() { break; }
+            }
+        }
+        None
+    }))
+    .unwrap_or_else(|_| None)
+    .or_else(|| {
+        let mut file = File::open(file_path).ok()?;
+        let mut buffer = vec![0u8; 128 * 1024]; 
+        let n = file.read(&mut buffer).unwrap_or(0);
+        read_exif_from_bytes_permissive(&buffer[..n])
+    })
+}
+
 pub fn get_image_orientation(file_path: &str) -> i32 {
-    let file = match File::open(file_path) {
-        Ok(file) => file,
-        Err(_) => return 1,
-    };
-    let mut reader = BufReader::new(file);
-    let exif = match Reader::new().read_from_container(&mut reader) {
-        Ok(exif) => exif,
+    let data = match File::open(file_path) {
+        Ok(mut f) => {
+            let mut buf = vec![0u8; 128 * 1024];
+            let n = f.read(&mut buf).unwrap_or(0);
+            buf.truncate(n);
+            buf
+        }
         Err(_) => return 1,
     };
 
-    exif.get_field(Tag::Orientation, In::PRIMARY)
-        .and_then(|field| field.value.get_uint(0))
-        .map(|value| value as i32)
-        .unwrap_or(1)
+    // 1. Try modern logic
+    if let Some(exif) = read_exif_from_bytes_permissive(&data) {
+        let orient = exif.get_field(Tag::Orientation, In::PRIMARY)
+            .or_else(|| exif.fields().find(|f| f.tag == Tag::Orientation))
+            .and_then(|field| field.value.get_uint(0))
+            .map(|value| value as i32);
+        
+        if let Some(o) = orient { return o; }
+    }
+
+    // 2. Industry Fallback: Binary Scan
+    // This handles K800i and other phones with broken IFD chains
+    scan_orientation_binary(&data).unwrap_or(1)
 }
 
 fn apply_orientation(img: DynamicImage, orientation: i32) -> DynamicImage {
@@ -292,11 +395,10 @@ struct EmbeddedJpegCandidate {
 }
 
 fn collect_embedded_jpeg_candidates(file_path: &str) -> Result<Vec<EmbeddedJpegCandidate>, String> {
-    let file = File::open(file_path).map_err(|e| format!("Failed to open RAW image: {}", e))?;
-    let mut reader = BufReader::new(file);
-    let exif = Reader::new()
-        .read_from_container(&mut reader)
-        .map_err(|e| format!("Failed to parse EXIF preview: {}", e))?;
+    let exif = match read_exif_permissive(file_path) {
+        Some(exif) => exif,
+        None => return Ok(Vec::new()),
+    };
 
     let buf = exif.buf();
     let mut candidates: Vec<EmbeddedJpegCandidate> = Vec::new();
@@ -407,10 +509,9 @@ fn select_embedded_jpeg_for_thumbnail(
 }
 
 fn get_jpeg_orientation_from_bytes(data: &[u8]) -> i32 {
-    let mut reader = Cursor::new(data);
-    let exif = match Reader::new().read_from_container(&mut reader) {
-        Ok(exif) => exif,
-        Err(_) => return 1,
+    let exif = match read_exif_from_bytes_permissive(data) {
+        Some(exif) => exif,
+        None => return 1,
     };
 
     exif.get_field(Tag::Orientation, In::PRIMARY)
