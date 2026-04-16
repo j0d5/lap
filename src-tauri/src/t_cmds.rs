@@ -435,25 +435,19 @@ pub fn get_folder_thumb_count(file_type: i64, folder_id: i64) -> i64 {
 /// edit an image
 #[tauri::command]
 pub async fn edit_image(params: t_image::EditParams) -> Result<bool, String> {
-    tokio::task::spawn_blocking(move || Ok(t_image::edit_image(params)))
-        .await
-        .map_err(|e| format!("Task error: {}", e))?
+    Ok(t_image::edit_image(params).await)
 }
 
 /// copy an edited image to clipboard
 #[tauri::command]
 pub async fn copy_edited_image(params: t_image::EditParams) -> Result<bool, String> {
-    tokio::task::spawn_blocking(move || Ok(t_image::copy_edited_image_to_clipboard(params)))
-        .await
-        .map_err(|e| format!("Task error: {}", e))?
+    Ok(t_image::copy_edited_image_to_clipboard(params).await)
 }
 
 /// copy image to clipboard
 #[tauri::command]
 pub async fn copy_image(file_path: String) -> Result<bool, String> {
-    tokio::task::spawn_blocking(move || t_image::copy_file_to_clipboard(&file_path))
-    .await
-    .map_err(|e| format!("Task error: {}", e))?
+    t_image::copy_file_to_clipboard(&file_path).await
 }
 
 /// rename a file

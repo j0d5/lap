@@ -21,6 +21,7 @@ use std::fs::File;
 use std::io::{BufReader, Cursor, Read};
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
+#[cfg(target_os = "macos")]
 use std::process::Command;
 use std::sync::Mutex;
 use std::time::UNIX_EPOCH;
@@ -672,8 +673,8 @@ pub struct EditParams {
 }
 
 /// edit an image and save to dest file
-pub fn edit_image(params: EditParams) -> bool {
-    if let Ok(img) = get_edited_image(&params) {
+pub async fn edit_image(params: EditParams) -> bool {
+    if let Ok(img) = get_edited_image(&params).await {
         let path = Path::new(&params.dest_file_path);
         let format = match params.output_format.as_str() {
             "png" => image::ImageFormat::Png,
@@ -987,7 +988,7 @@ fn should_generate_preview_for_file(file_path: &str, file_type: i64) -> bool {
         || is_heic_path(file_path)
 }
 
-fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>, String> {
+async fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>, String> {
     let file_type = t_utils::get_file_type(file_path).unwrap_or(0);
 
     if file_type == 3 {
@@ -1028,10 +1029,10 @@ fn get_generated_preview_bytes(file_path: &str) -> Result<Option<Vec<u8>>, Strin
     Ok(None)
 }
 
-pub fn copy_file_to_clipboard(file_path: &str) -> Result<bool, String> {
+pub async fn copy_file_to_clipboard(file_path: &str) -> Result<bool, String> {
     if should_generate_preview_for_file(file_path, t_utils::get_file_type(file_path).unwrap_or(0))
     {
-        let preview = get_generated_preview_bytes(file_path)?
+        let preview = get_generated_preview_bytes(file_path).await?
             .ok_or_else(|| format!("Failed to resolve preview image: {}", file_path))?;
         let img = image::load_from_memory(&preview)
             .map_err(|e| format!("Failed to decode preview image: {}", e))?;
@@ -1044,18 +1045,18 @@ pub fn copy_file_to_clipboard(file_path: &str) -> Result<bool, String> {
 }
 
 /// copy an edited image to clipboard
-pub fn copy_edited_image_to_clipboard(params: EditParams) -> bool {
-    if let Ok(img) = get_edited_image(&params) {
+pub async fn copy_edited_image_to_clipboard(params: EditParams) -> bool {
+    if let Ok(img) = get_edited_image(&params).await {
         return copy_image_to_clipboard(img);
     }
     false
 }
 
 /// get an edited image
-fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
+async fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
     let file_type = t_utils::get_file_type(&params.source_file_path).unwrap_or(0);
     let mut img = if should_generate_preview_for_file(&params.source_file_path, file_type) {
-        let preview = get_generated_preview_bytes(&params.source_file_path)?
+        let preview = get_generated_preview_bytes(&params.source_file_path).await?
             .ok_or_else(|| "Failed to resolve editable preview image".to_string())?;
         image::load_from_memory(&preview)
             .map_err(|e| format!("Failed to decode editable preview image: {}", e))?
