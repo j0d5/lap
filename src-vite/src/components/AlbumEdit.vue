@@ -55,52 +55,67 @@
         <template v-if="selectedFolder !== ''">
           <!-- Files Breakdown Label (Left Column) -->
           <div class="h-8 flex items-start pt-3 text-[10px] uppercase tracking-widest font-bold text-base-content/25">
-            {{ $t('album.edit.scanned_files') }}
+            {{ isScanning ? $t('search.index.indexing', { count: '', total: '' }).split('...')[0] : (isNewAlbum ? $t('album.edit.files_to_scan') : $t('album.edit.scanned_files')) }}
           </div>
           
           <!-- Breakdown Content (Right Column) -->
           <div class="py-3 flex flex-col gap-2">
             <!-- Total Summary (Right Aligned) -->
             <div class="flex justify-end items-baseline mb-0.5">
-              <span class="text-xs font-bold text-base-content/70">
-                {{ totalImageCount >= 0 ? $t('album.edit.files_count', { count: (totalImageCount + totalVideoCount).toLocaleString(), size: formatFileSize(totalImageSize + totalVideoSize) }) : '...' }}
+              <span class="text-xs font-bold text-base-content/70" :class="{ 'animate-pulse': totalImageCount < 0 }">
+                {{ totalImageCount >= 0 ? $t('album.edit.files_count', { count: (totalImageCount + totalVideoCount).toLocaleString(), size: formatFileSize(totalImageSize + totalVideoSize) }) : $t('album.edit.files_counting') }}
               </span>
             </div>
             
-            <!-- Elegant Progress Bar -->
-            <div v-if="totalImageCount >= 0" class="flex w-full h-2 bg-base-content/5 rounded-full overflow-hidden shadow-inner">
-              <div 
-                class="bg-primary/80 transition-all duration-500 ease-out shadow-[inset_-1px_0_0_rgba(0,0,0,0.1)]" 
-                :style="{ width: (totalImageCount / (totalImageCount + totalVideoCount || 1) * 100) + '%' }"
-                :title="$t('album.edit.images')"
-              ></div>
-              <div 
-                class="bg-primary/30 transition-all duration-500 ease-out" 
-                :style="{ width: (totalVideoCount / (totalImageCount + totalVideoCount || 1) * 100) + '%' }"
-                :title="$t('album.edit.videos')"
-              ></div>
-            </div>
-            <progress v-else class="progress progress-primary/40 w-full h-2"></progress>
+            <template v-if="shouldShowBreakdown">
+              <!-- Elegant Progress Bar -->
+              <div v-if="totalImageCount >= 0" class="flex w-full h-2 bg-base-content/5 rounded-full overflow-hidden shadow-inner">
+                <template v-if="isScanning">
+                  <div 
+                    class="bg-primary transition-all duration-300 ease-out" 
+                    :style="{ width: (indexedCount / (totalCount || 1) * 100) + '%' }"
+                  ></div>
+                </template>
+                <template v-else>
+                  <div 
+                    class="bg-primary/80 transition-all duration-500 ease-out shadow-[inset_-1px_0_0_rgba(0,0,0,0.1)]" 
+                    :style="{ width: (totalImageCount / (totalImageCount + totalVideoCount || 1) * 100) + '%' }"
+                    :title="$t('album.edit.images')"
+                  ></div>
+                  <div 
+                    class="bg-primary/30 transition-all duration-500 ease-out" 
+                    :style="{ width: (totalVideoCount / (totalImageCount + totalVideoCount || 1) * 100) + '%' }"
+                    :title="$t('album.edit.videos')"
+                  ></div>
+                </template>
+              </div>
+              <progress v-else class="progress progress-primary/40 w-full h-2"></progress>
 
-            <!-- Metadata Labels (Space Between) -->
-            <div class="flex justify-between items-center px-0.5">
-              <!-- Images info -->
-              <div class="flex flex-col">
-                <span class="text-[10px] font-bold text-primary/70 uppercase tracking-tight">{{ $t('album.edit.images') }}</span>
-                <span class="text-[11px] font-semibold text-base-content/60">
-                  {{ totalImageCount >= 0 ? totalImageCount.toLocaleString() : '...' }} 
-                  <span class="text-[9px] opacity-40 font-medium ml-0.5">{{ totalImageCount >= 0 ? formatFileSize(totalImageSize) : '' }}</span>
-                </span>
+              <!-- Metadata Labels (Space Between) -->
+              <div class="flex justify-between items-center px-0.5">
+                <!-- Images info -->
+                <div class="flex flex-col">
+                  <span class="text-[10px] font-bold text-primary/70 uppercase tracking-tight">{{ $t('album.edit.images') }}</span>
+                  <span class="text-[11px] font-semibold text-base-content/60">
+                    {{ totalImageCount >= 0 ? totalImageCount.toLocaleString() : '...' }} 
+                    <span v-if="!isScanning" class="text-[9px] opacity-40 font-medium ml-0.5">{{ totalImageCount >= 0 ? formatFileSize(totalImageSize) : '' }}</span>
+                  </span>
+                </div>
+                <!-- Videos info -->
+                <div class="flex flex-col items-end">
+                  <span class="text-[10px] font-bold text-primary/40 uppercase tracking-tight">{{ $t('album.edit.videos') }}</span>
+                  <span class="text-[11px] font-semibold text-base-content/50">
+                    {{ totalVideoCount >= 0 ? totalVideoCount.toLocaleString() : '...' }}
+                    <span v-if="!isScanning" class="text-[9px] opacity-40 font-medium ml-0.5">{{ totalVideoCount >= 0 ? formatFileSize(totalVideoSize) : '' }}</span>
+                  </span>
+                </div>
               </div>
-              <!-- Videos info -->
-              <div class="flex flex-col items-end">
-                <span class="text-[10px] font-bold text-primary/40 uppercase tracking-tight">{{ $t('album.edit.videos') }}</span>
-                <span class="text-[11px] font-semibold text-base-content/50">
-                  {{ totalVideoCount >= 0 ? totalVideoCount.toLocaleString() : '...' }}
-                  <span class="text-[9px] opacity-40 font-medium ml-0.5">{{ totalVideoCount >= 0 ? formatFileSize(totalVideoSize) : '' }}</span>
-                </span>
+
+              <!-- Scanning Progress Text -->
+              <div v-if="isScanning" class="text-[10px] font-bold text-primary text-center uppercase tracking-widest">
+                {{ $t('search.index.indexing', { count: indexedCount.toLocaleString(), total: totalCount.toLocaleString() }) }}
               </div>
-            </div>
+            </template>
           </div>
         </template>
         
@@ -128,8 +143,8 @@
       </button>
       <button 
         :class="[
-          'px-4 py-1 rounded-box', 
-          inputNameValue.trim().length > 0 && !isIndexing ? 'hover:bg-primary hover:text-base-100 cursor-pointer' : 'text-base-content/30 cursor-default',
+          'px-4 py-1 rounded-box transition-colors duration-200', 
+          inputNameValue.trim().length > 0 && selectedFolder.length > 0 && !isScanning ? 'hover:bg-primary hover:text-base-100 cursor-pointer bg-base-content/10' : 'text-base-content/20 cursor-default bg-base-content/5',
         ]" 
         @click="clickOk"
       >
@@ -141,12 +156,14 @@
 
 <script setup lang="ts">
 
-import { ref, watch, onMounted, onUnmounted } from 'vue';
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { countFolder, getAllAlbums } from '@/common/api';
+import { countFolder, getAllAlbums, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { useToast } from '@/common/toast';
 import { formatFileSize, openFolderDialog, getFolderName } from '@/common/utils';
 import { useUIStore } from '@/stores/uiStore';
+import { useLibraryStore } from '@/stores/libraryStore';
+import { getAlbumScanState } from '@/common/scanStatus';
 
 import ModalDialog from '@/components/ModalDialog.vue';
 import TButton from '@/components/TButton.vue';
@@ -193,6 +210,7 @@ const props = defineProps({
 
 const emit = defineEmits(['ok', 'cancel']);
 const uiStore = useUIStore();
+const libStore = useLibraryStore();
 const { t } = useI18n();
 
 const toast = useToast();
@@ -205,18 +223,37 @@ const inputNameRef = ref<HTMLInputElement | null>(null);
 const inputNameValue = ref(props.inputName);
 const inputDescriptionValue = ref(props.inputDescription);
 
-// total file count of the album
+// total file count of the album (from disk probe)
 const totalFolderCount = ref(0);
 const totalImageCount = ref(-1);
 const totalImageSize = ref(-1);
 const totalVideoCount = ref(0);
 const totalVideoSize = ref(0);
 
-// image recognition
-const isIndexing = ref(false);
-const indexedImageCount = ref(0);
-// const indexedVideoCount = ref(0);
-let shouldStopIndexing = false;
+// indexing progress
+const indexedCount = ref(0);
+const totalCount = ref(0);
+const isScanning = computed(() => {
+  if (props.isNewAlbum) return false;
+  return getAlbumScanState({
+    albumId: props.albumId,
+    albumQueue: libStore.index.albumQueue as any[],
+    pausedAlbumIds: libStore.index.pausedAlbumIds as any[],
+    status: Number(libStore.index.status || 0),
+  }) === 'scanning';
+});
+
+const shouldShowBreakdown = computed(() => {
+  // If scan (indexing) is active, always show the breakdown
+  if (isScanning.value) return true;
+  // For new albums, show ONLY total file/size summary (initially)
+  if (props.isNewAlbum) return false;
+  // For existing albums, show the breakdown by default
+  return true;
+});
+
+let unlistenIndexProgress: (() => void) | undefined;
+let unlistenIndexFinished: (() => void) | undefined;
 
 watch(() => selectedFolder.value, (newPath) => {
   if(newPath) {
@@ -239,10 +276,24 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeyDown);
   uiStore.pushInputHandler('AlbumEdit');
   
-  if (props.isNewAlbum) {
-    // clickSelectFolder();
-  }
-  else {
+  // listen for index progress
+  unlistenIndexProgress = await listenIndexProgress((event: any) => {
+    const { album_id, current, total } = event.payload;
+    if (Number(album_id) === Number(props.albumId)) {
+      indexedCount.value = current;
+      totalCount.value = total;
+    }
+  });
+
+  // listen for index finished
+  unlistenIndexFinished = await listenIndexFinished((event: any) => {
+    const { album_id } = event.payload;
+    if (Number(album_id) === Number(props.albumId)) {
+      // Refresh album info if needed? Usually total counts should be updated.
+    }
+  });
+
+  if (!props.isNewAlbum) {
     selectedFolder.value = props.albumPath;
 
     setTimeout(() => {
@@ -254,14 +305,19 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
   uiStore.removeInputHandler('AlbumEdit');
-  // Stop indexing if component is unmounted
-  shouldStopIndexing = true;
+  
+  if (unlistenIndexProgress) unlistenIndexProgress();
+  if (unlistenIndexFinished) unlistenIndexFinished();
 });
 
 const clickSelectFolder = async () => {
   const folderPath = await openFolderDialog();
   if (folderPath) {
     selectedFolder.value = folderPath;
+    // Auto focus name input after folder selected
+    setTimeout(() => {
+      inputNameRef.value?.focus();
+    }, 100);
   }
 };
 
@@ -274,8 +330,8 @@ function handleKeyDown(event: KeyboardEvent) {
 
   switch (key) {
     case 'Enter':
-      // Don't trigger OK if user is in an input or textarea to avoid accidental close, e.g. during IME input
-      if (!isInputOrTextarea) {
+      // Allow Enter to submit if in a text input (but not a textarea)
+      if (activeElement?.tagName === 'INPUT' || !isInputOrTextarea) {
         event.preventDefault();
         clickOk();
       }

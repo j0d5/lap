@@ -25,6 +25,7 @@
       "images": "Imágenes",
       "videos": "Vídeos",
       "scanned_files": "Archivos escaneados",
+      "files_to_scan": "Archivos por escanear",
       "files_count": "{count} archivos ({size})",
       "files_counting": "Contando archivos...",
       "created_at": "Creado el",

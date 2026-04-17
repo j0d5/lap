@@ -23,6 +23,8 @@ export interface Album {
     path: string;
     description?: string;
     cover_file_id?: number;
+    last_scan_time?: number;
+    last_scan_count?: number;
     is_expanded?: boolean;
     is_favorite?: boolean;
     total?: number;

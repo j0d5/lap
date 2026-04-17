@@ -425,6 +425,8 @@ onMounted( async () => {
         album.indexed = updatedAlbum.indexed;
         album.total = updatedAlbum.total;
         album.cover_file_id = updatedAlbum.cover_file_id;
+        album.last_scan_time = updatedAlbum.last_scan_time;
+        album.last_scan_count = updatedAlbum.last_scan_count;
         
         // Reload the cover thumbnail
         await loadAlbumCover(album_id, album.cover_file_id ?? null);
@@ -447,6 +449,8 @@ onMounted( async () => {
 
       album.total = updatedAlbum.total;
       album.indexed = updatedAlbum.indexed;
+      album.last_scan_time = updatedAlbum.last_scan_time;
+      album.last_scan_count = updatedAlbum.last_scan_count;
       if (updatedAlbum.cover_file_id !== undefined) {
         album.cover_file_id = updatedAlbum.cover_file_id;
       }

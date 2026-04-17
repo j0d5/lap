@@ -25,6 +25,7 @@
       "images": "Изображения",
       "videos": "Видео",
       "scanned_files": "Сканированные файлы",
+      "files_to_scan": "Файлы для сканирования",
       "files_count": "{count} файлов ({size})",
       "files_counting": "Подсчет файлов...",
       "created_at": "Создано",

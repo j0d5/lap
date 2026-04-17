@@ -25,6 +25,7 @@
       "images": "画像",
       "videos": "動画",
       "scanned_files": "スキャン済みファイル",
+      "files_to_scan": "スキャン対象ファイル",
       "files_count": "{count} ファイル ({size})",
       "files_counting": "ファイルを計算中...",
       "created_at": "作成日",
