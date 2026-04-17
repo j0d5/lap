@@ -83,6 +83,7 @@ async fn main() {
         )))
         .manage(t_dedup::DedupState::default())
         .setup(|_app| {
+            t_video::init_ffmpeg_path(&_app.handle());
             t_config::set_app_identifier(&_app.config().identifier);
             t_menu::install_app_menu(&_app.handle())?;
 

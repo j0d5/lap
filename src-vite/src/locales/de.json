@@ -717,7 +717,17 @@
     "month_date": "d. MMMM",
     "date_long_with_weekday": "EEEE, d. MMMM yyyy",
     "date_time": "dd.MM.yyyy HH:mm:ss",
-    "date_time_long": "d. MMMM yyyy HH:mm:ss"
+    "date_time_long": "d. MMMM yyyy HH:mm:ss",
+    "relative_time": {
+      "just_now": "gerade eben",
+      "seconds": "vor {count} Sekunden",
+      "minutes": "vor {count} Minuten",
+      "hours": "vor {count} Stunden",
+      "days": "vor {count} Tagen",
+      "weeks": "vor {count} Wochen",
+      "months": "vor {count} Monaten",
+      "years": "vor {count} Jahren"
+    }
   },
   "print_view": {
     "title": "Drucken...",
@@ -892,8 +902,10 @@
       "preview_position": "Vorschauposition",
       "preview_position_hint": "Gilt nur, wenn die Filmstreifenansicht aktiviert ist",
       "preview_position_options": [
-        "Über den Miniaturen",
-        "Unter den Miniaturen"
+        "Oberhalb der Thumbnails",
+        "Unterhalb der Thumbnails",
+        "Links der Thumbnails",
+        "Rechts der Thumbnails"
       ]
     },
     "image_view": {

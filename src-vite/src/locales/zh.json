@@ -717,7 +717,17 @@
     "month_date": "M月d日",
     "date_long_with_weekday": "yyyy年M月d日",
     "date_time": "yyyy/MM/dd HH:mm:ss",
-    "date_time_long": "yyyy年M月d日 HH:mm:ss"
+    "date_time_long": "yyyy年M月d日 HH:mm:ss",
+    "relative_time": {
+      "just_now": "刚刚",
+      "seconds": "{count} 秒前",
+      "minutes": "{count} 分钟前",
+      "hours": "{count} 小时前",
+      "days": "{count} 天前",
+      "weeks": "{count} 周前",
+      "months": "{count} 个月前",
+      "years": "{count} 年前"
+    }
   },
   "print_view": {
     "title": "打印...",
@@ -893,7 +903,9 @@
       "preview_position_hint": "仅在开启胶片视图时生效",
       "preview_position_options": [
         "缩略图上方",
-        "缩略图下方"
+        "缩略图下方",
+        "缩略图左侧",
+        "缩略图右侧"
       ]
     },
     "image_view": {

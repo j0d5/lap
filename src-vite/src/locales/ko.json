@@ -717,7 +717,17 @@
     "month_date": "M월 d일",
     "date_long_with_weekday": "yyyy년 M월 d일 EEEE",
     "date_time": "yyyy/MM/dd HH:mm:ss",
-    "date_time_long": "yyyy년 M월 d일 HH:mm:ss"
+    "date_time_long": "yyyy년 M월 d일 HH:mm:ss",
+    "relative_time": {
+      "just_now": "방금",
+      "seconds": "{count}초 전",
+      "minutes": "{count}분 전",
+      "hours": "{count}시간 전",
+      "days": "{count}일 전",
+      "weeks": "{count}주 전",
+      "months": "{count}개월 전",
+      "years": "{count}년 전"
+    }
   },
   "print_view": {
     "title": "인쇄...",
@@ -893,7 +903,9 @@
       "preview_position_hint": "필름스트립 보기가 켜져 있을 때만 적용됩니다",
       "preview_position_options": [
         "썸네일 위",
-        "썸네일 아래"
+        "썸네일 아래",
+        "썸네일 왼쪽",
+        "썸네일 오른쪽"
       ]
     },
     "image_view": {

@@ -109,6 +109,44 @@ export function formatTimestamp(timestamp: number, formatStr: string): string {
   }
 }
 
+/// format relative time string using i18n keys
+export function formatRelativeTime(timestamp: number, t: (key: string, data?: any) => string): string {
+  if (!timestamp || isNaN(timestamp)) return '';
+  
+  const now = Date.now() / 1000;
+  const diff = now - timestamp;
+  const absDiff = Math.abs(diff);
+
+  if (absDiff < 10) {
+    return t('format.relative_time.just_now');
+  }
+  if (absDiff < 60) {
+    return t('format.relative_time.seconds', { count: Math.floor(absDiff) });
+  }
+  const minutes = Math.floor(absDiff / 60);
+  if (minutes < 60) {
+    return t('format.relative_time.minutes', { count: minutes });
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return t('format.relative_time.hours', { count: hours });
+  }
+  const days = Math.floor(hours / 24);
+  if (days < 7) {
+    return t('format.relative_time.days', { count: days });
+  }
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) {
+    return t('format.relative_time.weeks', { count: weeks });
+  }
+  const months = Math.floor(days / 30);
+  if (months < 12) {
+    return t('format.relative_time.months', { count: months });
+  }
+  const years = Math.floor(days / 365);
+  return t('format.relative_time.years', { count: years });
+}
+
 /// format date to string
 export function formatDate(year: number, month: number, date: number, formatStr: string): string {
   try {

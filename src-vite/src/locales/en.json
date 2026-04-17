@@ -717,7 +717,17 @@
     "month_date": "MMMM do",
     "date_long_with_weekday": "eeee, MMMM do, yyyy",
     "date_time": "MM/dd/yyyy HH:mm:ss",
-    "date_time_long": "MMMM do, yyyy HH:mm:ss"
+    "date_time_long": "MMMM do, yyyy HH:mm:ss",
+    "relative_time": {
+      "just_now": "just now",
+      "seconds": "{count} seconds ago",
+      "minutes": "{count} minutes ago",
+      "hours": "{count} hours ago",
+      "days": "{count} days ago",
+      "weeks": "{count} weeks ago",
+      "months": "{count} months ago",
+      "years": "{count} years ago"
+    }
   },
   "print_view": {
     "title": "Print...",
@@ -892,8 +902,10 @@
       "preview_position": "Preview position",
       "preview_position_hint": "Only applies when Filmstrip view is enabled",
       "preview_position_options": [
-        "Above thumbnails",
-        "Below thumbnails"
+        "Top of Thumbnails",
+        "Bottom of Thumbnails",
+        "Left of Thumbnails",
+        "Right of Thumbnails"
       ]
     },
     "image_view": {

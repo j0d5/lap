@@ -17,10 +17,10 @@
         'pb-1': !config.settings.grid.showFilmStrip && !config.settings.showStatusBar,
       }"
       :items="fileList"
-      :direction="config.settings.grid.showFilmStrip ? 'horizontal' : 'vertical'"
+      :direction="config.settings.grid.showFilmStrip && config.settings.grid.previewPosition < 2 ? 'horizontal' : 'vertical'"
       :grid-items="config.settings.grid.showFilmStrip ? 1 : columnCount"
-      :item-size="config.settings.grid.showFilmStrip ? filmStripItemSize : itemHeight"
-      :item-secondary-size="!config.settings.grid.showFilmStrip ? itemWidth : undefined"
+      :item-size="config.settings.grid.showFilmStrip ? (config.settings.grid.previewPosition < 2 ? filmStripItemSize : itemHeight) : itemHeight"
+      :item-secondary-size="!config.settings.grid.showFilmStrip ? itemWidth : (config.settings.grid.previewPosition >= 2 ? itemWidth : undefined)"
       :key="`${config.settings.grid.showFilmStrip}`"
       :geometry="config.settings.grid.style === 2 ? layoutGeometry : undefined"
       :content-height="config.settings.grid.style === 2 ? layoutContentHeight : undefined"
@@ -70,7 +70,7 @@ import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
 import Thumbnail from '@/components/Thumbnail.vue';
 import VirtualScroll from '@/components/VirtualScroll.vue';
-import { calculateJustifiedLayout, calculateLinearRowLayout, type Geometry } from '@/common/layout';
+import { calculateJustifiedLayout, calculateLinearRowLayout, calculateLinearColumnLayout, type Geometry } from '@/common/layout';
 
 const props = withDefaults(defineProps<{
   selectedItemIndex: number;
@@ -114,9 +114,16 @@ const layoutGeometryResult = computed(() => {
 
   if (showFilmStrip) {
     if (style === 2) {
-      // Justified Layout in Filmstrip (Horizontal)
-      const result = calculateLinearRowLayout(props.fileList, size, 0);
-      return { boxes: result.boxes, contentSize: result.containerWidth };
+      const isVertical = config.settings.grid.previewPosition >= 2;
+      if (isVertical && containerWidth.value > 0) {
+        // Justified Layout in Filmstrip (Vertical)
+        const result = calculateLinearColumnLayout(props.fileList, containerWidth.value, 0);
+        return { boxes: result.boxes, contentSize: result.containerHeight };
+      } else {
+        // Justified Layout in Filmstrip (Horizontal)
+        const result = calculateLinearRowLayout(props.fileList, size, 0);
+        return { boxes: result.boxes, contentSize: result.containerWidth };
+      }
     }
     return { boxes: [], contentSize: 0 };
   } else if (style === 2 && containerWidth.value > 0) {
@@ -139,23 +146,36 @@ const isLayoutTransitioning = ref(false);
 const startGridSize = ref(0);
 
 const gap = 8; // Gap between items
+const isVerticalFilmstrip = computed(() => config.settings.grid.showFilmStrip && config.settings.grid.previewPosition >= 2);
 
 // item width and height(including gap)
 const itemWidth = computed(() => {
   const { style, size } = config.settings.grid;
+  if (isVerticalFilmstrip.value && containerWidth.value > 0) {
+    return containerWidth.value;
+  }
   if (style === 0) return size + 20; // size + padding(4*2) + border(2*2) + gap(8)
   return size;
 });
 
 const itemHeight = computed(() => {
   const { style, size } = config.settings.grid;
+  
   if (style === 0) {
     let labelHeight = 0;
     if (config.settings.grid.labelPrimary > 0) labelHeight += 18;   // text-sm
     if (config.settings.grid.labelSecondary > 0) labelHeight += 16; // text-xs
+    
+    if (isVerticalFilmstrip.value && containerWidth.value > 0) {
+      return containerWidth.value + 12 + labelHeight; // Narrower padding in filmstrip
+    }
     return size + 20 + labelHeight; // size + padding/border/gap(20) + labels
   }
   if (style === 1) return itemWidth.value + gap * 0.5;
+  
+  if (isVerticalFilmstrip.value && containerWidth.value > 0) {
+    return containerWidth.value;
+  }
   return size;
 });
 
@@ -267,11 +287,14 @@ function onScroll(e: Event) {
 
 function onWheel(e: WheelEvent) {
   if (config.settings.grid.showFilmStrip && scroller.value) {
-    // If it's a vertical scroll (deltaY) and no horizontal scroll (deltaX),
-    // translate it to horizontal scroll
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      scroller.value.$el.scrollLeft += e.deltaY;
-      e.preventDefault(); // Prevent default vertical scrolling behavior if any
+    const isHorizontal = config.settings.grid.previewPosition < 2;
+    if (isHorizontal) {
+      // If it's a vertical scroll (deltaY) and no horizontal scroll (deltaX),
+      // translate it to horizontal scroll
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        scroller.value.$el.scrollLeft += e.deltaY;
+        e.preventDefault(); // Prevent default vertical scrolling behavior if any
+      }
     }
   }
 }
@@ -332,33 +355,34 @@ function scrollToItem(index: number) {
       }
     }
   } else {
-    // Layout 1: Horizontal, center the item
-    let itemLeft = 0;
-    let itemWidthValue = 0;
+    // Filmstrip mode: center the item
+    const isHorizontal = config.settings.grid.previewPosition < 2;
+    let itemPos = 0;
+    let itemSizeValue = 0;
 
     if (config.settings.grid.style === 2 && layoutGeometry.value[index]) {
       const box = layoutGeometry.value[index];
-      itemLeft = box.x;
-      itemWidthValue = box.width;
+      itemPos = isHorizontal ? box.x : box.y;
+      itemSizeValue = isHorizontal ? box.width : box.height;
     } else {
-      const itemSize = filmStripItemSize.value;
-      itemLeft = index * itemSize;
-      itemWidthValue = itemSize;
+      const itemSizeConst = isHorizontal ? filmStripItemSize.value : itemHeight.value;
+      itemPos = index * itemSizeConst;
+      itemSizeValue = itemSizeConst;
     }
 
-    const itemCenter = itemLeft + itemWidthValue / 2;
-    const clientWidth = el.clientWidth;
+    const itemCenter = itemPos + itemSizeValue / 2;
+    const clientSize = isHorizontal ? el.clientWidth : el.clientHeight;
     
-    // Calculate target scrollLeft to center the item
-    let targetScrollLeft = itemCenter - clientWidth / 2;
+    // Calculate target scroll to center the item
+    let targetScroll = itemCenter - clientSize / 2;
     
     // Clamp to bounds
-    targetScrollLeft = Math.max(0, targetScrollLeft);
-    const maxScrollLeft = el.scrollWidth - clientWidth;
-    targetScrollLeft = Math.min(targetScrollLeft, maxScrollLeft);
+    targetScroll = Math.max(0, targetScroll);
+    const maxScroll = (isHorizontal ? el.scrollWidth : el.scrollHeight) - clientSize;
+    targetScroll = Math.min(targetScroll, maxScroll);
     
     el.scrollTo({
-      left: targetScrollLeft,
+      [isHorizontal ? 'left' : 'top']: targetScroll,
       behavior: 'smooth'
     });
   }

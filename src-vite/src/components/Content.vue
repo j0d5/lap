@@ -118,7 +118,7 @@
           <TButton
             :icon="IconFilmstrip"
             :iconStyle="{ 
-              transform: `rotate(${config.settings.grid.previewPosition === 1 ? 180 : 0}deg)`, 
+              transform: `rotate(${config.settings.grid.previewPosition === 1 ? 180 : (config.settings.grid.previewPosition === 2 ? 270 : (config.settings.grid.previewPosition === 3 ? 90 : 0))}deg)`, 
               transition: 'transform 0.3s ease-in-out' 
             }" 
             :tooltip="localeMsg.settings.filmstrip_view.title"
@@ -166,13 +166,16 @@
         <div ref="gridViewDiv" 
           :class="[
             'flex-1 flex',
-            config.settings.grid.previewPosition === 0 ? 'flex-col-reverse' : 'flex-col',
+            gridViewLayoutClass,
             config.settings.grid.showFilmStrip ? (config.settings.showStatusBar ? 'mt-12 mb-8' : 'mt-12 mb-1') : ''
           ]"
         >
           <div class="relative" 
             :class="{ 'flex-1': !config.settings.grid.showFilmStrip }"
-            :style="{ height: config.settings.grid.showFilmStrip ? itemSize + 'px' : '' }"
+            :style="{ 
+              height: (config.settings.grid.showFilmStrip && !isFilmstripVertical) ? itemSize + 'px' : '',
+              width: (config.settings.grid.showFilmStrip && isFilmstripVertical) ? itemWidth + 'px' : ''
+            }"
           >
             <!-- grid view -->
             <div ref="gridScrollContainerRef" class="absolute w-full h-full">
@@ -194,6 +197,7 @@
               <!-- Navigation buttons -->
               <div v-if="config.settings.grid.showFilmStrip && fileList.length > 0" 
                 class="absolute z-10 inset-1 flex items-center justify-between pointer-events-none"
+                :class="{ 'flex-col': isFilmstripVertical }"
               >
                 <button 
                   :class="[
@@ -203,7 +207,7 @@
                   @click="requestNavigate('prev')"
                   @dblclick.stop
                 >
-                  <IconLeft class="w-8 h-8" />
+                  <component :is="isFilmstripVertical ? IconArrowUp : IconLeft" class="w-8 h-8" />
                 </button>
                 <button 
                   :class="[
@@ -213,13 +217,15 @@
                   @click="requestNavigate('next')" 
                   @dblclick.stop
                 >
-                  <IconRight class="w-8 h-8" />
+                  <component :is="isFilmstripVertical ? IconArrowDown : IconRight" class="w-8 h-8" />
                 </button> 
               </div>
             </div>
           </div>
 
-          <div v-if="config.settings.grid.showFilmStrip" class="h-1"></div>
+          <div v-if="config.settings.grid.showFilmStrip" 
+            :class="isFilmstripVertical ? 'w-1 shrink-0' : 'h-1 shrink-0'"
+          ></div>
 
           <!-- film strip preview -->
           <div v-if="config.settings.grid.showFilmStrip" ref="previewDiv" 
@@ -628,6 +634,8 @@ import {
   IconFolderSearch,
   IconCalendarMonth,
   IconCalendarDay,
+  IconArrowUp,
+  IconArrowDown,
 } from '@/common/icons';
 
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
@@ -1090,6 +1098,17 @@ let scanVisiblePrefetchTimer: ReturnType<typeof setTimeout> | null = null;
 const scanVisiblePrefetchStart = ref(0);
 const scanVisiblePrefetchEnd = ref(0);
 const pendingRestoreScrollTop = ref<number | null>(null);
+
+const isFilmstripVertical = computed(() => config.settings.grid.showFilmStrip && config.settings.grid.previewPosition >= 2);
+
+const gridViewLayoutClass = computed(() => {
+  const pos = config.settings.grid.previewPosition || 0;
+  if (pos === 0) return 'flex-col-reverse';
+  if (pos === 1) return 'flex-col';
+  if (pos === 2) return 'flex-row-reverse';
+  if (pos === 3) return 'flex-row';
+  return 'flex-col';
+});
 
 // ai image search params
 const currentImageSearchParams = ref({
@@ -1608,18 +1627,6 @@ function handleLocalKeyDown(event: KeyboardEvent) {
   }
 
   if (!hasModifier) {
-    if (getActivePreviewMode() !== 'none' && event.key === 'ArrowUp') {
-      event.preventDefault();
-      getActivePreviewMediaRef()?.zoomIn?.();
-      return;
-    }
-
-    if (getActivePreviewMode() !== 'none' && event.key === 'ArrowDown') {
-      event.preventDefault();
-      getActivePreviewMediaRef()?.zoomOut?.();
-      return;
-    }
-
     if (event.code === 'KeyS') {
       event.preventDefault();
       enterSimilarSearchMode(fileList.value[selectedItemIndex.value]);
@@ -1722,9 +1729,10 @@ function handleLocalKeyDown(event: KeyboardEvent) {
     event.preventDefault();
   }
 
-  if (event.key === 'ArrowRight') {
+  const isFilmstrip = config.settings.grid.showFilmStrip;
+  if (event.key === 'ArrowRight' || (isFilmstrip && event.key === 'ArrowDown')) {
     requestNavigate('next');
-  } else if (event.key === 'ArrowLeft') {
+  } else if (event.key === 'ArrowLeft' || (isFilmstrip && event.key === 'ArrowUp')) {
     requestNavigate('prev');
   }
 }

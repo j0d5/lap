@@ -83,6 +83,7 @@ cd lap
 git submodule update --init --recursive
 cargo install tauri-cli --version "^2.0.0" --locked
 ./scripts/download_models.sh            # Windows: .\scripts\download_models.ps1
+./scripts/download_ffmpeg_sidecar.sh    # Windows: .\scripts\download_ffmpeg_sidecar.ps1
 cd src-vite && pnpm install && cd ..
 cargo tauri dev
 ```
@@ -93,7 +94,7 @@ cargo tauri dev
 | :--- | :--- |
 | Images | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF, AVIF, JXL |
 | RAW photos | CR2, CR3, CRW, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, DNG, SRW, RWL, MRW, 3FR, MOS, DCR, KDC, ERF, MEF, RAW, MDC |
-| Videos | MP4, MOV, M4V, MKV, AVI, FLV, TS, WMV, WebM, and more. HEVC/H.265 is natively supported on macOS; other platforms transcode automatically. |
+| Videos | MP4, MOV, M4V, MKV, AVI, FLV, TS/M2TS, WMV, WebM, 3GP/3G2, F4V, VOB, MPG/MPEG, ASF, DIVX and more. H.264 is supported on all platforms. HEVC/H.265 and VP9 are natively supported on macOS. |
 
 ## Architecture
 
@@ -106,12 +107,11 @@ cargo tauri dev
 | Library | Purpose |
 | :-- | :-- |
 | [LibRaw](https://github.com/LibRaw/LibRaw) | RAW image decoding and thumbnail extraction |
-| [FFmpeg](https://ffmpeg.org/) | Video decoding and thumbnail generation |
+| [FFmpeg](https://ffmpeg.org/) | Video processing and thumbnail generation |
 | [ONNX Runtime](https://onnxruntime.ai/) | Local AI model inference engine |
 | [CLIP](https://github.com/openai/CLIP) | Image-text similarity search |
 | [InsightFace](https://github.com/deepinsight/insightface) | Face detection and recognition |
 | [Leaflet](https://leafletjs.com/) | Interactive map for geotagged photos |
-| [Video.js](https://videojs.com/) | Video playback |
 | [daisyUI](https://daisyui.com/) | UI component library |
 
 ## License

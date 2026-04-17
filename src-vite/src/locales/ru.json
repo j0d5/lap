@@ -717,7 +717,17 @@
     "month_date": "d MMMM",
     "date_long_with_weekday": "EEEE, d MMMM yyyy",
     "date_time": "dd.MM.yyyy HH:mm:ss",
-    "date_time_long": "d MMMM yyyy HH:mm:ss"
+    "date_time_long": "d MMMM yyyy HH:mm:ss",
+    "relative_time": {
+      "just_now": "только что",
+      "seconds": "{count} сек. назад",
+      "minutes": "{count} мин. назад",
+      "hours": "{count} ч. назад",
+      "days": "{count} дн. назад",
+      "weeks": "{count} нед. назад",
+      "months": "{count} мес. назад",
+      "years": "{count} г. назад"
+    }
   },
   "print_view": {
     "title": "Печать...",
@@ -892,8 +902,10 @@
       "preview_position": "Положение предпросмотра",
       "preview_position_hint": "Применяется только при включенном режиме фотопленки",
       "preview_position_options": [
-        "Над миниатюрами",
-        "Под миниатюрами"
+        "Сверху от миниатюр",
+        "Снизу от миниатюр",
+        "Слева от миниатюр",
+        "Справа от миниатюр"
       ]
     },
     "image_view": {

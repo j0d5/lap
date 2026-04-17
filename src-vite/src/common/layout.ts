@@ -217,3 +217,47 @@ export function calculateLinearRowLayout(
         containerWidth: currentX
     };
 }
+
+export interface LinearColumnLayoutResult {
+    boxes: Geometry[];
+    containerHeight: number;
+}
+
+export function calculateLinearColumnLayout(
+    items: any[],
+    targetWidth: number,
+    spacing: number
+): LinearColumnLayoutResult {
+    const boxes: Geometry[] = [];
+    let currentY = 0;
+
+    items.forEach(item => {
+        let w = item.width && item.width > 0 ? item.width : 100;
+        let h = item.height && item.height > 0 ? item.height : 100;
+        if (item.rotate && item.rotate % 180 !== 0) {
+            [w, h] = [h, w];
+        }
+        const aspectRatio = w / h;
+
+        const itemHeight = targetWidth / aspectRatio;
+
+        boxes.push({
+            x: 0,
+            y: currentY,
+            width: targetWidth,
+            height: itemHeight
+        });
+
+        currentY += itemHeight + spacing;
+    });
+
+    // Remove trailing spacing from total height if items exist
+    if (boxes.length > 0) {
+        currentY -= spacing;
+    }
+
+    return {
+        boxes,
+        containerHeight: currentY
+    };
+}

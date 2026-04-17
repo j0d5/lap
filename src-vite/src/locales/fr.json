@@ -717,7 +717,17 @@
     "month_date": "d MMMM",
     "date_long_with_weekday": "EEEE d MMMM yyyy",
     "date_time": "dd/MM/yyyy HH:mm:ss",
-    "date_time_long": "d MMMM yyyy HH:mm:ss"
+    "date_time_long": "d MMMM yyyy HH:mm:ss",
+    "relative_time": {
+      "just_now": "à l'instant",
+      "seconds": "il y a {count} secondes",
+      "minutes": "il y a {count} minutes",
+      "hours": "il y a {count} heures",
+      "days": "il y a {count} jours",
+      "weeks": "il y a {count} semaines",
+      "months": "il y a {count} mois",
+      "years": "il y a {count} ans"
+    }
   },
   "print_view": {
     "title": "Imprimer...",
@@ -893,7 +903,9 @@
       "preview_position_hint": "S'applique uniquement lorsque la vue pellicule est activée",
       "preview_position_options": [
         "Au-dessus des miniatures",
-        "Sous les miniatures"
+        "Sous les miniatures",
+        "À gauche des miniatures",
+        "À droite des miniatures"
       ]
     },
     "image_view": {
