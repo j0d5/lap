@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/public/icon.png" alt="Логотип Lap" width="120" style="border-radius: 20px">
+  <img src="../../docs/public/icon.png" alt="Логотип Lap" width="120" style="border-radius: 20px">
   <h1>Lap — Приватный локальный менеджер фотографий</h1>
   <h3>Менеджер фотографий с открытым исходным кодом для macOS, Windows и Linux.</h3>
   <p>
@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | Русский
+[English](../../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | Русский
 
 Lap — это локальный менеджер фотографий с открытым исходным кодом, созданный для просмотра семейных альбомов, быстрого поиска старых снимков и управления огромными медиабиблиотеками без доступа к интернету.
 Это приватная альтернатива облачным сервисам: никакой принудительной загрузки, локальный поиск на базе ИИ, рабочий процесс на основе папок и бесплатное использование.
 
 - Сайт: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Демо-видео: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- Конфиденциальность: [PRIVACY.md](PRIVACY.md)
+- Конфиденциальность: [PRIVACY.md](../../PRIVACY.md)
 
 ## Скачать Lap
 
@@ -41,11 +41,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## Скриншоты
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Скриншот локального менеджера фото Lap" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Скриншот локального менеджера фото Lap" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Скриншот локального ИИ-поиска фото Lap" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Скриншот локального ИИ-поиска фото Lap" width="900">
 </p>
 
 > Примеры изображений на скриншотах взяты из [Wikimedia Commons](https://commons.wikimedia.org/).
@@ -128,4 +128,4 @@ cargo tauri dev
 
 ## Лицензия
 
-GPL-3.0-or-later. См. [LICENSE](LICENSE).
+GPL-3.0-or-later. См. [LICENSE](../../LICENSE).

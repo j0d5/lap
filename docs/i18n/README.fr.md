@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/public/icon.png" alt="Logo Lap" width="120" style="border-radius: 20px">
+  <img src="../../docs/public/icon.png" alt="Logo Lap" width="120" style="border-radius: 20px">
   <h1>Lap - Gestionnaire de photos privées locales</h1>
   <h3>Gestionnaire de photos de bureau open source pour macOS, Windows et Linux.</h3>
   <p>
@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | Français | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
+[English](../../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | Français | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
 
 Lap est un gestionnaire de photos open source et local-first conçu pour parcourir les albums familiaux, retrouver rapidement d'anciennes photos et gérer de grandes bibliothèques multimédias personnelles hors ligne.
 C'est une alternative respectueuse de la vie privée aux services de photos en ligne : pas de téléchargement forcé, recherche IA locale, flux de travail centré sur les dossiers, et gratuit à utiliser.
 
 - Site web : [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Vidéo de démonstration : [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- Confidentialité : [PRIVACY.md](PRIVACY.md)
+- Confidentialité : [PRIVACY.md](../../PRIVACY.md)
 
 ## Télécharger Lap
 
@@ -41,11 +41,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## Captures d'écran
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Capture d'écran du gestionnaire de photos locales Lap" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Capture d'écran du gestionnaire de photos locales Lap" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Capture d'écran de la recherche de photos par IA locale Lap" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Capture d'écran de la recherche de photos par IA locale Lap" width="900">
 </p>
 
 > Les images d'exemple des captures d'écran proviennent de [Wikimedia Commons](https://commons.wikimedia.org/).
@@ -128,4 +128,4 @@ cargo tauri dev
 
 ## Licence
 
-GPL-3.0-or-later. Voir [LICENSE](LICENSE).
+GPL-3.0-or-later. Voir [LICENSE](../../LICENSE).

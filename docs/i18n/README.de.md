@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/public/icon.png" alt="Lap Logo" width="120" style="border-radius: 20px">
+  <img src="../../docs/public/icon.png" alt="Lap Logo" width="120" style="border-radius: 20px">
   <h1>Lap – Privater lokaler Fotomanager</h1>
   <h3>Open-Source-Desktop-Fotomanager für macOS, Windows und Linux.</h3>
   <p>
@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | Deutsch | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
+[English](../../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | Deutsch | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
 
 Lap ist ein quelloffener, lokal orientierter Fotomanager zum Durchsuchen von Familienalben, zum schnellen Finden alter Fotos und zum Offline-Verwalten großer persönlichen Medienbibliotheken.
 Es ist eine datenschutzorientierte Alternative zu Cloud-Fotodiensten: kein erzwungener Upload, lokale KI-Suche, ordnerbasierter Workflow und kostenlos nutzbar.
 
 - Website: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Demo-Video: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- Datenschutz: [PRIVACY.md](PRIVACY.md)
+- Datenschutz: [PRIVACY.md](../../PRIVACY.md)
 
 ## Lap herunterladen
 
@@ -41,11 +41,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## Screenshots
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap lokaler Fotobibliotheksmanager Screenshot" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap lokaler Fotobibliotheksmanager Screenshot" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap lokale KI-Fotosuche Screenshot" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap lokale KI-Fotosuche Screenshot" width="900">
 </p>
 
 > Die Beispielbilder in den Screenshots stammen von [Wikimedia Commons](https://commons.wikimedia.org/).
@@ -128,4 +128,4 @@ cargo tauri dev
 
 ## Lizenz
 
-GPL-3.0-oder-später. Siehe [LICENSE](LICENSE).
+GPL-3.0-oder-später. Siehe [LICENSE](../../LICENSE).

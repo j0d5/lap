@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/public/icon.png" alt="Lap Logo" width="120" style="border-radius: 20px">
+  <img src="../../docs/public/icon.png" alt="Lap Logo" width="120" style="border-radius: 20px">
   <h1>Lap - プライベート・ローカルフォトマネージャー</h1>
   <h3>macOS、Windows、Linux向けのオープンソース・デスクトップ写真管理ツール。</h3>
   <p>
@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](README.md) | [简体中文](README.zh-CN.md) | 日本語 | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
+[English](../../README.md) | [简体中文](README.zh-CN.md) | 日本語 | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
 
 Lapは、オープンソースでローカルファーストな写真管理ツールです。家族のアルバムを閲覧したり、古い写真を素早く見つけたり、膨大な個人メディアライブラリをオフラインで管理したりするために設計されています。
 クラウド写真サービスのプライバシーに配慮した代替案として、強制アップロードなし、ローカルAI検索、フォルダーベースのワークフローを提供し、完全に無料で使用できます。
 
 - ウェブサイト: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - デモビデオ: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- プライバシーポリシー: [PRIVACY.md](PRIVACY.md)
+- プライバシーポリシー: [PRIVACY.md](../../PRIVACY.md)
 
 ## Lapをダウンロード
 
@@ -41,11 +41,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## スクリーンショット
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap ローカルフォトライブラリ管理 スクリーンショット" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap ローカルフォトライブラリ管理 スクリーンショット" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap ローカルAI写真検索 スクリーンショット" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap ローカルAI写真検索 スクリーンショット" width="900">
 </p>
 
 > スクリーンショット内のサンプル画像は [Wikimedia Commons](https://commons.wikimedia.org/) から提供されています。
@@ -128,4 +128,4 @@ cargo tauri dev
 
 ## ライセンス
 
-GPL-3.0-or-later。詳細は [LICENSE](LICENSE) をご覧ください。
+GPL-3.0-or-later。詳細は [LICENSE](../../LICENSE) をご覧ください。

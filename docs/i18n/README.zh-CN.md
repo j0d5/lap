@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/public/icon.png" alt="Lap Logo" width="120" style="border-radius: 20px">
+  <img src="../../docs/public/icon.png" alt="Lap Logo" width="120" style="border-radius: 20px">
   <h1>Lap - 私人本地照片管理器</h1>
   <h3>适用于 macOS、Windows 和 Linux 的开源桌面照片管理工具。</h3>
   <p>
@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](README.md) | 简体中文 | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
+[English](../../README.md) | 简体中文 | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
 
 Lap 是一款开源、本地优先的照片管理器，旨在帮助您轻松浏览家庭相册、快速找回旧照片，并离线管理庞大的个人多媒体库。
 它是云端照片服务的隐私替代方案：无强制上传、内置本地 AI 搜索、以文件夹为中心的工作流，且完全免费使用。
 
 - 官方网站: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - 演示视频: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- 隐私策略: [PRIVACY.md](PRIVACY.md)
+- 隐私策略: [PRIVACY.md](../../PRIVACY.md)
 
 ## 下载 Lap
 
@@ -41,11 +41,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## 界面预览
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap 本地照片管理界面" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap 本地照片管理界面" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap 本地 AI 搜索界面" width="900">
+  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap 本地 AI 搜索界面" width="900">
 </p>
 
 > 截图中的示例图片来自 [Wikimedia Commons](https://commons.wikimedia.org/)。
@@ -128,4 +128,4 @@ cargo tauri dev
 
 ## 开源协议
 
-GPL-3.0-or-later。详情请参阅 [LICENSE](LICENSE)。
+GPL-3.0-or-later。详情请参阅 [LICENSE](../../LICENSE)。
