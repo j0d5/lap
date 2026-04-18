@@ -774,6 +774,7 @@
       "network": "Network error while loading video",
       "decode": "Video decoding error",
       "format": "Unsupported video format or the file might be corrupted.",
+      "external_player_recommended": "This video needs compatibility transcoding before it can play here. For long videos, Lap recommends using an external player instead of waiting for background processing.",
       "open_in_external_app": "Open in external player",
       "open_in_external_app_named": "Open video in {app}...",
       "use_external": "To open unsupported formats, set up an external player in Settings.",

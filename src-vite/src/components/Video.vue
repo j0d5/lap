@@ -322,8 +322,9 @@ const loadVideo = async (filePath: string) => {
 
   const tryPlayProcessed = async () => {
     try {
-      // Let the backend choose remux vs transcode for the current platform.
-      const result = await prepareVideo(filePath, String(nextUpIndex));
+      // The file already failed direct playback, so request a processed fallback
+      // without bypassing the backend's remux/transcode strategy.
+      const result = await prepareVideo(filePath, String(nextUpIndex), 'fallback');
       if (currentLoadId !== currentLoadingId) return;
 
       player.reset();
@@ -355,7 +356,7 @@ const loadVideo = async (filePath: string) => {
       showSpinner.value = false;
       console.error('[Video] Prepare failed:', e);
       hasError.value = true;
-      errorMessage.value = getFallbackErrorMessage();
+      errorMessage.value = getPrepareErrorMessage(e);
     }
   };
 
@@ -404,6 +405,20 @@ function getFallbackErrorMessage() {
     return `${formatMsg}\n${$t('video.errors.use_external_generic')}`;
   }
   return `${formatMsg}\n${$t('video.errors.use_external')}`;
+}
+
+function getPrepareErrorMessage(error: unknown) {
+  if (String(error).includes('video_requires_external_player')) {
+    const reason = $t('video.errors.external_player_recommended');
+    if (canOpenExternalApp.value && externalVideoAppName.value) {
+      return `${reason}\n${$t('video.errors.use_external_with_app', { app: externalVideoAppName.value })}`;
+    }
+    if (canOpenExternalApp.value) {
+      return `${reason}\n${$t('video.errors.use_external_generic')}`;
+    }
+    return `${reason}\n${$t('video.errors.use_external')}`;
+  }
+  return getFallbackErrorMessage();
 }
 
 function handlePlayerError(playerInstance: ReturnType<typeof videojs>) {

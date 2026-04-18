@@ -774,6 +774,7 @@
       "network": "Erro de rede",
       "decode": "Erro de decodificação",
       "format": "Formato de vídeo não suportado ou o arquivo pode estar corrompido.",
+      "external_player_recommended": "Este vídeo precisa de transcodificação de compatibilidade antes de ser reproduzido aqui. Para vídeos longos, o Lap recomenda o uso de um player externo em vez de aguardar o processamento em segundo plano.",
       "open_in_external_app": "Abrir no player externo",
       "open_in_external_app_named": "Abrir vídeo em {app}...",
       "use_external": "Para abrir formatos não suportados, configure um player externo nas Configurações.",

@@ -27,6 +27,9 @@ use serde::Serialize;
 use serde_json::Value;
 
 static SIDE_CAR_DIR: OnceCell<PathBuf> = OnceCell::new();
+const MAX_VIDEO_PROCESS_DURATION_SECS: u64 = 5 * 60;
+const TRANSCODE_TIMEOUT_SECS: u64 = 180;
+const EXTERNAL_PLAYER_REQUIRED_ERROR: &str = "video_requires_external_player";
 
 fn thumbnail_ffmpeg_threads() -> usize {
     let logical_cores = std::thread::available_parallelism()
@@ -368,13 +371,6 @@ async fn analyze_strategy(json: &Value, file_path: &str) -> VideoAction {
         }
     }
 
-    // 1. Video Codec Support logic
-    let v_ok = match v_codec {
-        "h264" => !cfg!(target_os = "linux"), // Linux WebKitGTK often lacks H.264, force Remux
-        "hevc" | "vp9" => cfg!(target_os = "macos"), 
-        _ => false,
-    };
-
     // 2. Audio Codec Support (Corrected: ffprobe profile is a string)
     let a_ok = match a_codec {
         "aac" => matches!(a_profile_str, "LC" | "Main" | "") && a_channels <= 2,
@@ -383,33 +379,39 @@ async fn analyze_strategy(json: &Value, file_path: &str) -> VideoAction {
         _ => false,
     };
 
-    if !v_ok {
-        return VideoAction::Transcode;
-    }
-
     // 3. Container & Platform Specifics
     let is_mp4 = fmt.contains("mp4") || fmt.contains("m4v");
     let is_mov = fmt.contains("mov");
+    let is_safe_mp4_audio = a_ok && (is_mp4 || is_mov);
 
-    if a_ok {
-        if is_mp4 {
-            if is_moov_at_start_async(file_path).await { return VideoAction::Direct; }
-        } else if is_mov {
-            if cfg!(target_os = "macos") {
-                if is_moov_at_start_async(file_path).await { return VideoAction::Direct; }
-            } else {
-                // Windows/Linux: MOV support is inconsistent in WebViews, force Remux to MP4
-                return VideoAction::Remux;
+    #[cfg(target_os = "macos")]
+    {
+        let direct_ok = match v_codec {
+            "h264" => is_safe_mp4_audio,
+            "hevc" => is_safe_mp4_audio,
+            "vp9" => is_safe_mp4_audio && is_mp4,
+            _ => false,
+        };
+
+        if direct_ok {
+            if (is_mp4 || is_mov) && is_moov_at_start_async(file_path).await {
+                return VideoAction::Direct;
             }
+            return VideoAction::Remux;
         }
-        // Linux: if we reached here, it's probably H.264 which we disabled v_ok for earlier
-        // Force Remux to standard MP4 with faststart
-        return VideoAction::Remux;
     }
 
-    // Video OK but Audio Incompatible -> Remux (FFmpeg CLI will encode to AAC)
-    // For Linux, if video wasn't v_ok, it already went to Transcode above.
-    VideoAction::Remux
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    {
+        if v_codec == "h264" && is_safe_mp4_audio {
+            if is_mp4 && is_moov_at_start_async(file_path).await {
+                return VideoAction::Direct;
+            }
+            return if is_mp4 || is_mov { VideoAction::Remux } else { VideoAction::Transcode };
+        }
+    }
+
+    VideoAction::Transcode
 }
 
 pub fn get_video_metadata(file_path: &str) -> Result<VideoMetadata, String> {
@@ -473,26 +475,38 @@ pub async fn prepare_video(app: AppHandle, state: tauri::State<'_, VideoManager>
         Err(e) => return Err(format!("Probe failed: {}", e)),
     };
 
-    // Only reject explicit user-forced processing for very long videos.
-    // Automatic platform compatibility processing must remain available.
-    if force.as_deref() == Some("process") && duration > 900 {
-        return Err("Video too long for transcoding (>15 min).".to_string());
+    // Lap should not spend a long time transcoding long videos in the background.
+    // Hand those cases off to an external player instead.
+    if action == VideoAction::Transcode && duration > MAX_VIDEO_PROCESS_DURATION_SECS {
+        return Err(EXTERNAL_PLAYER_REQUIRED_ERROR.to_string());
+    }
+    if force.as_deref() == Some("process") && duration > MAX_VIDEO_PROCESS_DURATION_SECS {
+        return Err(EXTERNAL_PLAYER_REQUIRED_ERROR.to_string());
     }
 
-    if action == VideoAction::Direct && force.as_deref() != Some("process") {
+    let force_process = force.as_deref() == Some("process");
+    let force_fallback = force.as_deref() == Some("fallback");
+
+    if action == VideoAction::Direct && !force_process && !force_fallback {
         return Ok(VideoPrepareResult { 
             url: file_path, 
             action: VideoAction::Direct 
         });
     }
 
-    let mut current_action = if force.as_deref() == Some("process") { VideoAction::Transcode } else { action };
+    let mut current_action = if force_process {
+        VideoAction::Transcode
+    } else if force_fallback && action == VideoAction::Direct {
+        VideoAction::Remux
+    } else {
+        action
+    };
     let mut try_software_enc = false;
     
     let temp_dir = app.path().app_cache_dir().map_err(|e| e.to_string())?.join("video_cache");
     if !temp_dir.exists() { let _ = tokio::fs::create_dir_all(&temp_dir).await; }
     
-    let ext = if current_action == VideoAction::Transcode && cfg!(target_os = "linux") { "webm" } else { "mp4" };
+    let ext = "mp4"; // Use MP4 for all platforms as it's the most compatible container for WebViews
     let cache_name = get_cache_filename_async(&file_path, ext).await;
     let output_path = temp_dir.join(&cache_name);
     // Fixed Concurrency: include player_id in tmp name to avoid contention
@@ -518,14 +532,11 @@ pub async fn prepare_video(app: AppHandle, state: tauri::State<'_, VideoManager>
         let stage_timeout_secs = if current_action == VideoAction::Remux {
             40
         } else {
-            // Give automatic compatibility transcodes enough time for long videos.
-            // Keep user-forced processing more conservative to avoid runaway jobs.
-            let max_transcode_timeout = if force.as_deref() == Some("process") { 900 } else { 3600 };
-            let mut base = (duration * 30 / 60).clamp(120, max_transcode_timeout);
+            let mut base = (duration * 30 / 60).clamp(120, TRANSCODE_TIMEOUT_SECS);
             
             // macOS: Software encoding (libx264) is significantly slower than hardware (videotoolbox)
             #[cfg(target_os = "macos")]
-            if try_software_enc { base = (base * 3).min(max_transcode_timeout); }
+            if try_software_enc { base = (base * 3).min(TRANSCODE_TIMEOUT_SECS); }
             
             base
         };
@@ -535,10 +546,11 @@ pub async fn prepare_video(app: AppHandle, state: tauri::State<'_, VideoManager>
         if current_action == VideoAction::Remux { 
             cmd.args(["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-f", "mp4", "-y"]); 
         } else {
-            // Linux: Use WebM/VP8 for maximum compatibility as H.264 support is unreliable
+            // Linux: Use standard H.264/AAC in MP4 for best WebKitGTK compatibility.
+            // If H.264 is missing, the frontend will automatically catch the decode error and prompt for external player.
             #[cfg(target_os = "linux")]
             {
-                cmd.args(["-c:v", "libvpx", "-b:v", "2M", "-crf", "10", "-quality", "good", "-cpu-used", "5", "-c:a", "libvorbis", "-f", "webm", "-y"]);
+                cmd.args(["-c:v", "libx264", "-preset", "superfast", "-crf", "23", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", "-f", "mp4", "-y"]);
             }
             // macOS: Use Hardware acceleration
             #[cfg(target_os = "macos")]
