@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Vista de tira de película",
-      "preview_position": "Posición de la vista previa",
+      "title": "Tira de película",
+      "preview_position": "Posición de la tira de película",
       "preview_position_hint": "Solo se aplica cuando la vista de tira de película está activada",
       "preview_position_options": [
-        "Sobre miniaturas",
-        "Bajo miniaturas",
-        "Izquierda de miniaturas",
-        "Derecha de miniaturas"
+        "Arriba",
+        "Abajo",
+        "Izquierda",
+        "Derecha"
       ]
     },
     "image_view": {

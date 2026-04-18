@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Vue pellicule",
-      "preview_position": "Position de l'aperçu",
+      "title": "Pellicule",
+      "preview_position": "Position de la pellicule",
       "preview_position_hint": "S'applique uniquement lorsque la vue pellicule est activée",
       "preview_position_options": [
-        "Au-dessus des miniatures",
-        "Sous les miniatures",
-        "À gauche des miniatures",
-        "À droite des miniatures"
+        "Haut",
+        "Bas",
+        "Gauche",
+        "Droite"
       ]
     },
     "image_view": {

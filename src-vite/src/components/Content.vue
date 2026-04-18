@@ -1103,10 +1103,10 @@ const isFilmstripVertical = computed(() => config.settings.grid.showFilmStrip &&
 
 const gridViewLayoutClass = computed(() => {
   const pos = config.settings.grid.previewPosition || 0;
-  if (pos === 0) return 'flex-col-reverse';
-  if (pos === 1) return 'flex-col';
-  if (pos === 2) return 'flex-row-reverse';
-  if (pos === 3) return 'flex-row';
+  if (pos === 0) return 'flex-col';
+  if (pos === 1) return 'flex-col-reverse';
+  if (pos === 2) return 'flex-row';
+  if (pos === 3) return 'flex-row-reverse';
   return 'flex-col';
 });
 

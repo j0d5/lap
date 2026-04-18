@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Vista em película",
-      "preview_position": "Posição da pré-visualização",
+      "title": "Película",
+      "preview_position": "Posição da película",
       "preview_position_hint": "Aplica-se apenas quando a vista em película está ativada",
       "preview_position_options": [
-        "Acima das miniaturas",
-        "Abaixo das miniaturas",
-        "À esquerda das miniaturas",
-        "À direita das miniaturas"
+        "Em cima",
+        "Em baixo",
+        "À esquerda",
+        "À direita"
       ]
     },
     "image_view": {

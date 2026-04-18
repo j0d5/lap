@@ -584,13 +584,7 @@ const slideShowTransitionOptions = computed(() => {
 
 const filmStripViewPreviewPositionOptions = computed(() => {
   const options = localeMsg.value.settings.filmstrip_view.preview_position_options;
-  const result = [];
-
-  for (let i = 0; i < options.length; i++) {
-    result.push({ label: options[i], value: i });
-  }
-
-  return result;
+  return options.map((label, i) => ({ label, value: i }));
 });
 
 // Define the similarity options

@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "필름스트립 보기",
-      "preview_position": "미리보기 위치",
+      "title": "필름스트립",
+      "preview_position": "필름스트립 위치",
       "preview_position_hint": "필름스트립 보기가 켜져 있을 때만 적용됩니다",
       "preview_position_options": [
-        "썸네일 위",
-        "썸네일 아래",
-        "썸네일 왼쪽",
-        "썸네일 오른쪽"
+        "위",
+        "아래",
+        "왼쪽",
+        "오른쪽"
       ]
     },
     "image_view": {

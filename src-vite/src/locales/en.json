@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Filmstrip view",
-      "preview_position": "Preview position",
+      "title": "Filmstrip",
+      "preview_position": "Filmstrip placement",
       "preview_position_hint": "Only applies when Filmstrip view is enabled",
       "preview_position_options": [
-        "Top of Thumbnails",
-        "Bottom of Thumbnails",
-        "Left of Thumbnails",
-        "Right of Thumbnails"
+        "Top",
+        "Bottom",
+        "Left",
+        "Right"
       ]
     },
     "image_view": {

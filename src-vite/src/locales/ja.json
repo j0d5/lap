@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "フィルムストリップ表示",
-      "preview_position": "プレビューの位置",
+      "title": "フィルムストリップ",
+      "preview_position": "フィルムストリップの位置",
       "preview_position_hint": "フィルムストリップ表示が有効なときのみ適用されます",
       "preview_position_options": [
-        "サムネイルの上",
-        "サムネイルの下",
-        "サムネイルの左",
-        "サムネイルの右"
+        "上",
+        "下",
+        "左",
+        "右"
       ]
     },
     "image_view": {

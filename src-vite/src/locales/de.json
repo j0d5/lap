@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "Filmstreifenansicht",
-      "preview_position": "Vorschauposition",
+      "title": "Filmstreifen",
+      "preview_position": "Position des Filmstreifens",
       "preview_position_hint": "Gilt nur, wenn die Filmstreifenansicht aktiviert ist",
       "preview_position_options": [
-        "Oberhalb der Thumbnails",
-        "Unterhalb der Thumbnails",
-        "Links der Thumbnails",
-        "Rechts der Thumbnails"
+        "Oben",
+        "Unten",
+        "Links",
+        "Rechts"
       ]
     },
     "image_view": {

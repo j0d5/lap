@@ -906,14 +906,14 @@
       ]
     },
     "filmstrip_view": {
-      "title": "胶片视图",
-      "preview_position": "预览图位置",
+      "title": "胶片栏",
+      "preview_position": "胶片栏位置",
       "preview_position_hint": "仅在开启胶片视图时生效",
       "preview_position_options": [
-        "缩略图上方",
-        "缩略图下方",
-        "缩略图左侧",
-        "缩略图右侧"
+        "顶部",
+        "底部",
+        "左侧",
+        "右侧"
       ]
     },
     "image_view": {
