@@ -160,27 +160,29 @@ fn build_libjpeg(manifest_dir: &Path, out_dir: &Path, is_windows: bool) -> Optio
     let build_root = out_dir.join("libjpeg-build");
     let binary_dir = build_root.join("build");
 
-    let (generator, static_lib, lib_name) = if is_windows {
-        ("NMake Makefiles", "jpeg-static.lib", "jpeg-static")
+    let (static_lib, lib_name) = if is_windows {
+        ("jpeg-static.lib", "jpeg-static")
     } else {
-        ("Unix Makefiles", "libjpeg.a", "jpeg")
+        ("libjpeg.a", "jpeg")
     };
     let static_lib_path = binary_dir.join(static_lib);
+    let static_lib_path_release = binary_dir.join("Release").join(static_lib);
 
     fs::create_dir_all(&binary_dir).unwrap();
 
-    if !static_lib_path.exists() {
-        run_command(
-            Command::new("cmake")
-                .arg("-G")
-                .arg(generator)
-                .arg("-DCMAKE_BUILD_TYPE=Release")
-                .arg("-DENABLE_SHARED=FALSE")
-                .arg("-DENABLE_STATIC=TRUE")
-                .arg(source_dir.as_os_str())
-                .current_dir(&binary_dir),
-            "configure libjpeg-turbo",
-        );
+    if !static_lib_path.exists() && !static_lib_path_release.exists() {
+        let mut configure = Command::new("cmake");
+        if !is_windows {
+            configure.arg("-G").arg("Unix Makefiles");
+        }
+        configure
+            .arg("-DCMAKE_BUILD_TYPE=Release")
+            .arg("-DENABLE_SHARED=FALSE")
+            .arg("-DENABLE_STATIC=TRUE")
+            .arg(source_dir.as_os_str())
+            .current_dir(&binary_dir);
+
+        run_command(&mut configure, "configure libjpeg-turbo");
 
         let jobs = env::var("NUM_JOBS").unwrap_or_else(|_| "1".to_string());
         run_command(
@@ -189,6 +191,8 @@ fn build_libjpeg(manifest_dir: &Path, out_dir: &Path, is_windows: bool) -> Optio
                 .arg(".")
                 .arg("--target")
                 .arg("jpeg-static")
+                .arg("--config")
+                .arg("Release")
                 .arg("--parallel")
                 .arg(jobs)
                 .current_dir(&binary_dir),
@@ -196,11 +200,18 @@ fn build_libjpeg(manifest_dir: &Path, out_dir: &Path, is_windows: bool) -> Optio
         );
     }
 
+    let final_lib_dir = if static_lib_path_release.exists() {
+        binary_dir.join("Release")
+    } else {
+        binary_dir.clone()
+    };
+
     Some(JpegBuild {
-        include_dirs: vec![binary_dir.clone(), source_dir.join("src")],
-        lib_dir: binary_dir,
+        include_dirs: vec![binary_dir, source_dir.join("src")],
+        lib_dir: final_lib_dir,
         lib_name: lib_name.to_string(),
     })
+
 }
 
 /// Recursively collect all .cpp files under a directory
