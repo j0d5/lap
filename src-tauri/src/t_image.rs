@@ -253,6 +253,38 @@ fn encode_jpeg_rgb8(rgb: &image::RgbImage) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("Failed to encode JPEG thumbnail: {}", e))
 }
 
+fn resize_rgb_image_to_jpeg(
+    rgb: image::RgbImage,
+    thumbnail_size: u32,
+) -> Result<Vec<u8>, String> {
+    let (src_w, src_h) = rgb.dimensions();
+    let (dst_w, dst_h) = compute_thumbnail_dimensions(src_w, src_h, thumbnail_size);
+
+    if src_w == dst_w && src_h == dst_h {
+        return encode_jpeg_rgb8(&rgb);
+    }
+
+    let src_image = fir::images::Image::from_vec_u8(
+        src_w,
+        src_h,
+        rgb.into_raw(),
+        fir::PixelType::U8x3,
+    )
+    .map_err(|e| format!("Failed to prepare RGB source image for resize: {}", e))?;
+    let mut dst_image = fir::images::Image::new(dst_w, dst_h, fir::PixelType::U8x3);
+    let mut resizer = fir::Resizer::new();
+    let options =
+        fir::ResizeOptions::new().resize_alg(fir::ResizeAlg::Convolution(fir::FilterType::Bilinear));
+
+    resizer
+        .resize(&src_image, &mut dst_image, &options)
+        .map_err(|e| format!("Failed to resize RGB thumbnail: {}", e))?;
+
+    let resized = image::RgbImage::from_raw(dst_w, dst_h, dst_image.into_vec())
+        .ok_or_else(|| "Failed to build resized RGB image".to_string())?;
+    encode_jpeg_rgb8(&resized)
+}
+
 fn is_jpeg_path(file_path: &str) -> bool {
     Path::new(file_path)
         .extension()
@@ -269,15 +301,6 @@ fn decode_scaled_jpeg_image(
 ) -> Result<Option<DynamicImage>, String> {
     if !is_jpeg_path(file_path) || thumbnail_size == 0 {
         return Ok(None);
-    }
-
-    // Performance heuristic: if the image is already small, just use standard decode.
-    // Avoids double-open/double-setup cost if the gain is marginal.
-    if let Ok((width, height)) = get_image_dimensions(file_path) {
-        let max_edge = width.max(height);
-        if max_edge <= thumbnail_size.saturating_mul(2) {
-            return Ok(None);
-        }
     }
 
     // Logic: We pass the thumbnail size to libjpeg-turbo, which picks the best 1/8, 1/4, 1/2 scale.
@@ -300,6 +323,11 @@ pub(crate) fn resize_dynamic_image_to_jpeg(
     thumbnail_size: u32,
 ) -> Result<Vec<u8>, String> {
     let adjusted = apply_orientation(img, orientation);
+
+    if !adjusted.color().has_alpha() {
+        return resize_rgb_image_to_jpeg(adjusted.to_rgb8(), thumbnail_size);
+    }
+
     let rgba = adjusted.to_rgba8();
     let (src_w, src_h) = rgba.dimensions();
     let (dst_w, dst_h) = compute_thumbnail_dimensions(src_w, src_h, thumbnail_size);
