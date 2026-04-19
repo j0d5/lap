@@ -355,6 +355,7 @@ const navContainerSize = computed(() => {
 
 const adjustmentStyle = computed(() => (src: string) => {
   if (!uiStore.activeAdjustments.filePath) return '';
+  if (uiStore.isInputActive('EditImage')) return '';
   
   // Check if current image matches the one being edited
   // We need to compare paths. The src might be a full URL (asset://...) while filePath is absolute path

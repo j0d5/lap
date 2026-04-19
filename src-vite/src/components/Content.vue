@@ -2357,7 +2357,7 @@ onMounted( async() => {
     );
     if (loadedFiles.length === 0) return;
 
-    getFileListThumb(loadedFiles, 0, 8);
+    getFileListThumb(loadedFiles, 0, 8, true);
   });
 
   // listen for external refresh requests (e.g. from folder context menu)
@@ -3537,7 +3537,7 @@ const onFileSaved = async (success: boolean, payload: SavedFilePayload = {}) => 
         await setFileRotate(savedFile.id, 0);
         await syncFileMetaToImageViewer(savedFile.id, { rotate: 0 });
       }
-      updateFile(fileList.value[selectedItemIndex.value]);
+      await updateFile(fileList.value[selectedItemIndex.value]);
       toast.success(localeMsg.value.tooltip.save_image.success);
     }
   } else {
@@ -3902,10 +3902,10 @@ const updateFile = async (file: any) => {
 // force-update the thumbnail for the file
 const updateThumbForFile = async (file: any) => {
   const thumb = await getFileThumb(file.id, file.file_path, file.file_type, file.e_orientation || 0, config.settings.thumbnailSize, true);
-  if(thumb) {
-    if(thumb.error_code === 0) {
+  if (thumb) {
+    if (thumb.error_code === 0) {
       file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, true);
-    } else if(thumb.error_code === 1) {
+    } else if (thumb.error_code === 1) {
       file.thumbnail = thumbnailPlaceholder;
     }
   }
@@ -4470,7 +4470,7 @@ let currentThumbRequestId = 0;
 
 // Get the thumbnail for the files (non-blocking, runs in background)
 // Automatically cancels when a new request starts (e.g., switching folders)
-async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4) {
+async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4, bustCache = false) {
   // Use current request ID to check for cancellation
   const requestId = currentThumbRequestId;
   
@@ -4491,7 +4491,7 @@ async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4) 
     
     if(thumb) {
       if(thumb.error_code === 0) {
-        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder);
+        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, bustCache);
       } else if(thumb.error_code === 1) {
         file.thumbnail = thumbnailPlaceholder;
       }
