@@ -7,7 +7,7 @@
 use arboard::Clipboard;
 use exif::{In, Reader, Tag};
 use fast_image_resize as fir;
-use image::{DynamicImage, GenericImageView, ImageReader};
+use image::{DynamicImage, GenericImageView, ImageReader, RgbImage};
 use little_exif::filetype::FileExtension;
 use little_exif::ifd::ExifTagGroup;
 use little_exif::metadata::Metadata as LittleExifMetadata;
@@ -253,6 +253,47 @@ fn encode_jpeg_rgb8(rgb: &image::RgbImage) -> Result<Vec<u8>, String> {
         .map_err(|e| format!("Failed to encode JPEG thumbnail: {}", e))
 }
 
+fn is_jpeg_path(file_path: &str) -> bool {
+    Path::new(file_path)
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| matches!(ext.to_ascii_lowercase().as_str(), "jpg" | "jpeg" | "jpe"))
+        .unwrap_or(false)
+}
+
+
+fn decode_scaled_jpeg_image(
+    file_path: &str,
+    _orientation: i32,
+    thumbnail_size: u32,
+) -> Result<Option<DynamicImage>, String> {
+    if !is_jpeg_path(file_path) || thumbnail_size == 0 {
+        return Ok(None);
+    }
+
+    // Performance heuristic: if the image is already small, just use standard decode.
+    // Avoids double-open/double-setup cost if the gain is marginal.
+    if let Ok((width, height)) = get_image_dimensions(file_path) {
+        let max_edge = width.max(height);
+        if max_edge <= thumbnail_size.saturating_mul(2) {
+            return Ok(None);
+        }
+    }
+
+    // Logic: We pass the thumbnail size to libjpeg-turbo, which picks the best 1/8, 1/4, 1/2 scale.
+    match crate::t_jpeg::decode_rgb8_scaled(file_path, thumbnail_size, thumbnail_size) {
+        Ok((pixels, w, h)) => {
+            let img = RgbImage::from_raw(w, h, pixels)
+                .ok_or_else(|| "Failed to build RGB image from turbo pixels".to_string())?;
+            Ok(Some(DynamicImage::ImageRgb8(img)))
+        }
+        Err(e) => {
+            eprintln!("libjpeg-turbo scaled decode failed for {}: {}", file_path, e);
+            Ok(None) // Fallback to standard decode
+        }
+    }
+}
+
 pub(crate) fn resize_dynamic_image_to_jpeg(
     img: DynamicImage,
     orientation: i32,
@@ -366,12 +407,15 @@ pub fn get_image_thumbnail(
     }
 
     let result = panic::catch_unwind(|| {
-        // Open and decode the image
-        let img_reader =
-            ImageReader::open(file_path).map_err(|e| format!("Failed to open image: {}", e))?;
-        let img = img_reader
-            .decode()
-            .map_err(|e| format!("Failed to decode image: {}", e))?;
+        let img = if let Some(img) = decode_scaled_jpeg_image(file_path, orientation, thumbnail_size)? {
+            img
+        } else {
+            let img_reader =
+                ImageReader::open(file_path).map_err(|e| format!("Failed to open image: {}", e))?;
+            img_reader
+                .decode()
+                .map_err(|e| format!("Failed to decode image: {}", e))?
+        };
         resize_dynamic_image_to_jpeg(img, orientation, thumbnail_size).map(Some)
     });
 

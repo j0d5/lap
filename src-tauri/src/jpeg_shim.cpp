@@ -79,6 +79,94 @@ int lap_jpeg_encode_rgb8(const unsigned char *rgb_data, unsigned int width,
   return 1;
 }
 
+int lap_jpeg_decode_rgb8(const char *file_path, unsigned int target_width,
+                         unsigned int target_height, unsigned int *out_width,
+                         unsigned int *out_height, unsigned char **out_data,
+                         char *err_buf, size_t err_buf_len) {
+  if (!file_path || !out_width || !out_height || !out_data) {
+    if (err_buf && err_buf_len > 0) {
+      std::snprintf(err_buf, err_buf_len, "Invalid JPEG decode arguments");
+    }
+    return 0;
+  }
+
+  // Initialize early to prevent leak in setjmp handler
+  *out_data = nullptr;
+
+  FILE *infile = std::fopen(file_path, "rb");
+  if (!infile) {
+    if (err_buf && err_buf_len > 0) {
+      std::snprintf(err_buf, err_buf_len, "Could not open file: %s", file_path);
+    }
+    return 0;
+  }
+
+  jpeg_decompress_struct cinfo;
+  std::memset(&cinfo, 0, sizeof(cinfo));
+  LapJpegErrorManager jerr;
+  cinfo.err = jpeg_std_error(&jerr.pub);
+  jerr.pub.error_exit = lap_jpeg_error_exit;
+  jerr.message[0] = '\0';
+
+  if (setjmp(jerr.setjmp_buffer)) {
+    jpeg_destroy_decompress(&cinfo);
+    std::fclose(infile);
+    if (*out_data) {
+      std::free(*out_data);
+      *out_data = nullptr;
+    }
+    if (err_buf && err_buf_len > 0) {
+      std::snprintf(err_buf, err_buf_len, "%s", jerr.message);
+    }
+    return 0;
+  }
+
+  jpeg_create_decompress(&cinfo);
+  jpeg_stdio_src(&cinfo, infile);
+  jpeg_read_header(&cinfo, TRUE);
+
+  // Calculate scaling factor (libjpeg supports 1/1, 1/2, 1/4, 1/8)
+  unsigned int scale_denom = 1;
+  if (target_width > 0 && target_height > 0) {
+    while (scale_denom < 8 &&
+           cinfo.image_width >= target_width * scale_denom * 2 &&
+           cinfo.image_height >= target_height * scale_denom * 2) {
+      scale_denom *= 2;
+    }
+  }
+  cinfo.scale_num = 1;
+  cinfo.scale_denom = scale_denom;
+  cinfo.out_color_space = JCS_RGB;
+
+  jpeg_start_decompress(&cinfo);
+
+  *out_width = cinfo.output_width;
+  *out_height = cinfo.output_height;
+  size_t row_stride = static_cast<size_t>(cinfo.output_width) * 3;
+  size_t total_size = row_stride * cinfo.output_height;
+  
+  *out_data = static_cast<unsigned char *>(std::malloc(total_size));
+  if (!(*out_data)) {
+    jpeg_destroy_decompress(&cinfo);
+    std::fclose(infile);
+    if (err_buf && err_buf_len > 0) {
+      std::snprintf(err_buf, err_buf_len, "Memory allocation failed for JPEG decode");
+    }
+    return 0;
+  }
+
+  while (cinfo.output_scanline < cinfo.output_height) {
+    unsigned char *buffer_array[1];
+    buffer_array[0] = *out_data + (cinfo.output_scanline * row_stride);
+    jpeg_read_scanlines(&cinfo, buffer_array, 1);
+  }
+
+  jpeg_finish_decompress(&cinfo);
+  jpeg_destroy_decompress(&cinfo);
+  std::fclose(infile);
+  return 1;
+}
+
 void lap_jpeg_free_buffer(unsigned char *data) {
   if (data) {
     std::free(data);
