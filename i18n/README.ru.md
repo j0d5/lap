@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](../../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | Русский
+[English](../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | Русский
 
 Lap — это локальный менеджер фотографий с открытым исходным кодом, созданный для просмотра семейных альбомов, быстрого поиска старых снимков и управления огромными медиабиблиотеками без доступа к интернету.
 Это приватная альтернатива облачным сервисам: никакой принудительной загрузки, локальный поиск на базе ИИ, рабочий процесс на основе папок и бесплатное использование.
 
 - Сайт: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Демо-видео: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- Конфиденциальность: [PRIVACY.md](../../PRIVACY.md)
+- Конфиденциальность: [PRIVACY.md](../PRIVACY.md)
 
 ## Скачать Lap
 
@@ -129,4 +129,4 @@ cargo tauri dev
 
 ## Лицензия
 
-GPL-3.0-or-later. См. [LICENSE](../../LICENSE).
+GPL-3.0-or-later. См. [LICENSE](../LICENSE).

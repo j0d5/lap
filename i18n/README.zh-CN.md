@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](../../README.md) | 简体中文 | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
+[English](../README.md) | 简体中文 | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
 
 Lap 是一款开源、本地优先的照片管理器，旨在帮助您轻松浏览家庭相册、快速找回旧照片，并离线管理庞大的个人多媒体库。
 它是云端照片服务的隐私替代方案：无强制上传、内置本地 AI 搜索、以文件夹为中心的工作流，且完全免费使用。
 
 - 官方网站: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - 演示视频: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- 隐私策略: [PRIVACY.md](../../PRIVACY.md)
+- 隐私策略: [PRIVACY.md](../PRIVACY.md)
 
 ## 下载 Lap
 
@@ -129,4 +129,4 @@ cargo tauri dev
 
 ## 开源协议
 
-GPL-3.0-or-later。详情请参阅 [LICENSE](../../LICENSE)。
+GPL-3.0-or-later。详情请参阅 [LICENSE](../LICENSE)。

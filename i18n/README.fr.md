@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](../../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | Français | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
+[English](../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | Français | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
 
 Lap est un gestionnaire de photos open source et local-first conçu pour parcourir les albums familiaux, retrouver rapidement d'anciennes photos et gérer de grandes bibliothèques multimédias personnelles hors ligne.
 C'est une alternative respectueuse de la vie privée aux services de photos en ligne : pas de téléchargement forcé, recherche IA locale, flux de travail centré sur les dossiers, et gratuit à utiliser.
 
 - Site web : [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Vidéo de démonstration : [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- Confidentialité : [PRIVACY.md](../../PRIVACY.md)
+- Confidentialité : [PRIVACY.md](../PRIVACY.md)
 
 ## Télécharger Lap
 
@@ -129,4 +129,4 @@ cargo tauri dev
 
 ## Licence
 
-GPL-3.0-or-later. Voir [LICENSE](../../LICENSE).
+GPL-3.0-or-later. Voir [LICENSE](../LICENSE).

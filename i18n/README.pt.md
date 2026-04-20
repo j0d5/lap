@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](../../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | Português | [Русский](README.ru.md)
+[English](../README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | Português | [Русский](README.ru.md)
 
 Lap é um gerenciador de fotos de código aberto e local-first, projetado para navegar em álbuns de família, encontrar fotos antigas rapidamente e gerenciar grandes bibliotecas de mídia pessoal offline.
 É uma alternativa focada na privacidade aos serviços de fotos na nuvem: sem upload forçado, busca por IA local, fluxo de trabalho centrado em pastas e gratuito para usar.
 
 - Site: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - Vídeo de demonstração: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- Privacidade: [PRIVACY.md](../../PRIVACY.md)
+- Privacidade: [PRIVACY.md](../PRIVACY.md)
 
 ## Baixar Lap
 
@@ -129,4 +129,4 @@ cargo tauri dev
 
 ## Licença
 
-GPL-3.0-ou-posterior. Veja [LICENSE](../../LICENSE).
+GPL-3.0-ou-posterior. Veja [LICENSE](../LICENSE).

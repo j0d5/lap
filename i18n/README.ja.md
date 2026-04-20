@@ -10,14 +10,14 @@
   </p>
 </div>
 
-[English](../../README.md) | [简体中文](README.zh-CN.md) | 日本語 | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
+[English](../README.md) | [简体中文](README.zh-CN.md) | 日本語 | [한국어](README.ko.md) | [Deutsch](README.de.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português](README.pt.md) | [Русский](README.ru.md)
 
 Lapは、オープンソースでローカルファーストな写真管理ツールです。家族のアルバムを閲覧したり、古い写真を素早く見つけたり、膨大な個人メディアライブラリをオフラインで管理したりするために設計されています。
 クラウド写真サービスのプライバシーに配慮した代替案として、強制アップロードなし、ローカルAI検索、フォルダーベースのワークフローを提供し、完全に無料で使用できます。
 
 - ウェブサイト: [https://julyx10.github.io/lap/](https://julyx10.github.io/lap/)
 - デモビデオ: [https://youtu.be/RbKqNKhbVUs](https://youtu.be/RbKqNKhbVUs)
-- プライバシーポリシー: [PRIVACY.md](../../PRIVACY.md)
+- プライバシーポリシー: [PRIVACY.md](../PRIVACY.md)
 
 ## Lapをダウンロード
 
@@ -129,4 +129,4 @@ cargo tauri dev
 
 ## ライセンス
 
-GPL-3.0-or-later。詳細は [LICENSE](../../LICENSE) をご覧ください。
+GPL-3.0-or-later。詳細は [LICENSE](../LICENSE) をご覧ください。
