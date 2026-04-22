@@ -58,12 +58,17 @@ fn fmt_heif_error(err: HeifError) -> String {
         return "ok".to_string();
     }
     unsafe {
-        let msg = if err.message.is_null() {
-            ""
+        let msg: String = if err.message.is_null() {
+            String::new()
         } else {
-            std::ffi::CStr::from_ptr(err.message).to_string_lossy().as_ref()
+            std::ffi::CStr::from_ptr(err.message)
+                .to_string_lossy()
+                .into_owned()
         };
-        format!("libheif error code={} subcode={} msg={}", err.code, err.subcode, msg)
+        format!(
+            "libheif error code={} subcode={} msg={}",
+            err.code, err.subcode, msg
+        )
     }
 }
 

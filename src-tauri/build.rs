@@ -11,6 +11,9 @@ use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn main() {
+    // Allow conditional compilation based on whether libheif is available.
+    println!("cargo::rustc-check-cfg=cfg(lap_has_libheif)");
+
     write_build_info();
     build_libraw();
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
@@ -105,6 +108,9 @@ fn build_libheif() {
         // Some libheif builds depend on stdc++.
         println!("cargo:rustc-link-lib=stdc++");
     }
+
+    // Enable the Rust-side libheif bindings only when the native library is available.
+    println!("cargo:rustc-cfg=lap_has_libheif");
 }
 
 /// writes the build information to a file
