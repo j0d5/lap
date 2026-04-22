@@ -328,6 +328,7 @@ async fn run_thumbnail_command(
     file_path: &str,
     ffmpeg_threads: &str,
     filter: &str,
+    map_spec: &str,
     strategy: ThumbnailStrategy,
     timeout_secs: u64,
 ) -> Result<Option<Vec<u8>>, String> {
@@ -344,7 +345,7 @@ async fn run_thumbnail_command(
     }
     cmd.args([
         "-map",
-        "0:v:0",
+        map_spec,
         "-vframes",
         "1",
         "-an",
@@ -432,7 +433,7 @@ pub async fn get_video_thumbnail(
             }
         });
 
-    match run_thumbnail_command(file_path, &ffmpeg_threads, &filter, primary_strategy, 20).await {
+    match run_thumbnail_command(file_path, &ffmpeg_threads, &filter, "0:v:0", primary_strategy, 20).await {
         Ok(result) => return Ok(result),
         Err(err) => {
             if should_retry_thumbnail_with_slow_seek(
@@ -445,6 +446,7 @@ pub async fn get_video_thumbnail(
                     file_path,
                     &ffmpeg_threads,
                     &filter,
+                    "0:v:0",
                     ThumbnailStrategy::SlowSeek(seek_time),
                     20,
                 )
@@ -460,6 +462,7 @@ pub async fn get_video_thumbnail(
         file_path,
         &ffmpeg_threads,
         &filter,
+        "0:v:0",
         ThumbnailStrategy::FirstFrame,
         15,
     )
@@ -508,11 +511,19 @@ async fn get_still_image_thumbnail_with_ffmpeg(
         )
     };
 
+    let map_spec = probe_json_async(file_path)
+        .await
+        .ok()
+        .as_ref()
+        .and_then(best_video_stream_map_spec)
+        .unwrap_or_else(|| "0:v:0".to_string());
+
     // Treat as a single-frame source (still image): no seeking logic.
     match run_thumbnail_command(
         file_path,
         &ffmpeg_threads,
         &filter,
+        &map_spec,
         ThumbnailStrategy::FirstFrame,
         20,
     )
@@ -527,6 +538,34 @@ async fn get_still_image_thumbnail_with_ffmpeg(
             Ok(None)
         }
     }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn best_video_stream_map_spec(probe: &Value) -> Option<String> {
+    let streams = probe.get("streams")?.as_array()?;
+
+    let mut best_video_idx: Option<usize> = None;
+    let mut best_area: u64 = 0;
+
+    let mut video_idx = 0usize;
+    for stream in streams {
+        if stream.get("codec_type")?.as_str()? != "video" {
+            continue;
+        }
+
+        let w = stream.get("width").and_then(|v| v.as_u64()).unwrap_or(0);
+        let h = stream.get("height").and_then(|v| v.as_u64()).unwrap_or(0);
+        let area = w.saturating_mul(h);
+
+        if area > best_area {
+            best_area = area;
+            best_video_idx = Some(video_idx);
+        }
+
+        video_idx += 1;
+    }
+
+    best_video_idx.map(|idx| format!("0:v:{}", idx))
 }
 
 #[cfg(not(target_os = "macos"))]
