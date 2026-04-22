@@ -440,9 +440,31 @@ pub fn get_image_thumbnail(
         } else {
             let img_reader =
                 ImageReader::open(file_path).map_err(|e| format!("Failed to open image: {}", e))?;
-            img_reader
-                .decode()
-                .map_err(|e| format!("Failed to decode image: {}", e))?
+
+            match img_reader.decode() {
+                Ok(img) => img,
+                Err(e) => {
+                    // Some formats/variants (notably AVIF) may fail to decode via `image` depending on
+                    // the underlying codec support. On macOS, fall back to `sips` which supports
+                    // more system formats and returns a JPEG directly.
+                    #[cfg(target_os = "macos")]
+                    if let Ok(Some(data)) = get_thumbnail_with_sips(file_path, thumbnail_size) {
+                        return Ok(Some(data));
+                    }
+                    // On other platforms, fall back to the bundled FFmpeg sidecar when available.
+                    // This is already used for HEIC/HEIF on non-macOS and tends to support more
+                    // real-world AVIF variants than the pure-Rust decode path.
+                    #[cfg(not(target_os = "macos"))]
+                    {
+                        if let Ok(Some(data)) =
+                            crate::t_video::get_video_thumbnail_sync(file_path, thumbnail_size, None)
+                        {
+                            return Ok(Some(data));
+                        }
+                    }
+                    return Err(format!("Failed to decode image: {}", e));
+                }
+            }
         };
         resize_dynamic_image_to_jpeg(img, orientation, thumbnail_size).map(Some)
     });
