@@ -25,10 +25,11 @@ struct HeifImageHandle(c_void);
 #[repr(C)]
 struct HeifImage(c_void);
 
+// libheif v1.21.x enums from heif_image.h
 // heif_colorspace_RGB
-const HEIF_COLORSPACE_RGB: c_int = 3;
+const HEIF_COLORSPACE_RGB: c_int = 1;
 // heif_chroma_interleaved_RGB
-const HEIF_CHROMA_INTERLEAVED_RGB: c_int = 11;
+const HEIF_CHROMA_INTERLEAVED_RGB: c_int = 10;
 // heif_channel_interleaved
 const HEIF_CHANNEL_INTERLEAVED: c_int = 10;
 
