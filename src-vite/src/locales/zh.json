@@ -184,7 +184,9 @@
       "select_mode": "多选模式",
       "select_count": "已选择 {count}",
       "sort_type_options": [
-        "时间",
+        "拍摄日期",
+        "创建日期",
+        "修改日期",
         "名称",
         "大小",
         "尺寸",
@@ -862,6 +864,7 @@
         "日期（最新优先）"
       ],
       "calendar_sort": "日历",
+      "calendar_sort_hint": "基于拍摄日期或修改日期",
       "calendar_sort_options": [
         "最早优先",
         "最新优先"

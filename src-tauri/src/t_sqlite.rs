@@ -1906,11 +1906,13 @@ impl AFile {
         };
         match params.sort_type {
             0 => format!("a.taken_date {}, a.id {}", dir, dir),
-            1 => format!("a.name_pinyin {}, a.id {}", dir, dir),
-            2 => format!("a.size {}, a.id {}", dir, dir),
-            3 => format!("a.width {}, a.height {}, a.id {}", dir, dir, dir),
-            4 => "RANDOM()".to_string(),
-            5 => "a.id ASC".to_string(), // internal: stable append order during scanning
+            1 => format!("a.created_at {}, a.id {}", dir, dir),
+            2 => format!("a.modified_at {}, a.id {}", dir, dir),
+            3 => format!("a.name_pinyin {}, a.id {}", dir, dir),
+            4 => format!("a.size {}, a.id {}", dir, dir),
+            5 => format!("a.width {}, a.height {}, a.id {}", dir, dir, dir),
+            6 => "RANDOM()".to_string(),
+            7 => "a.id ASC".to_string(), // internal: stable append order during scanning
             _ => format!("a.taken_date {}, a.id {}", dir, dir),
         }
     }
@@ -1962,8 +1964,8 @@ impl AFile {
 
     // get query timeline markers
     pub fn get_query_time_line(params: &QueryParams) -> Result<Vec<ATimeLine>, String> {
-        // Only process for time-based sorts (0=taken_date)
-        if params.sort_type != 0 {
+        // Only process for time-based sorts (0=taken_date, 1=created_at, 2=modified_at)
+        if params.sort_type > 2 {
             return Ok(Vec::new());
         }
 
@@ -1976,6 +1978,18 @@ impl AFile {
                 "CAST(strftime('%Y', a.taken_date, 'unixepoch', 'localtime') AS INTEGER)",
                 "CAST(strftime('%m', a.taken_date, 'unixepoch', 'localtime') AS INTEGER)",
                 "CAST(strftime('%d', a.taken_date, 'unixepoch', 'localtime') AS INTEGER)",
+            ),
+            1 => (
+                "a.created_at",
+                "CAST(strftime('%Y', a.created_at, 'unixepoch', 'localtime') AS INTEGER)",
+                "CAST(strftime('%m', a.created_at, 'unixepoch', 'localtime') AS INTEGER)",
+                "CAST(strftime('%d', a.created_at, 'unixepoch', 'localtime') AS INTEGER)",
+            ),
+            2 => (
+                "a.modified_at",
+                "CAST(strftime('%Y', a.modified_at, 'unixepoch', 'localtime') AS INTEGER)",
+                "CAST(strftime('%m', a.modified_at, 'unixepoch', 'localtime') AS INTEGER)",
+                "CAST(strftime('%d', a.modified_at, 'unixepoch', 'localtime') AS INTEGER)",
             ),
             _ => unreachable!(),
         };

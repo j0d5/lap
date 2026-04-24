@@ -115,6 +115,7 @@
               <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
                 <div class="flex flex-col gap-0.5 text-sm leading-5">
                   <div>{{ $t('settings.navigation.calendar_sort') }}</div>
+                  <div class="text-xs text-base-content/30">{{ $t('settings.navigation.calendar_sort_hint') }}</div>
                 </div>
                 <select class="select select-bordered select-sm min-w-40" v-model="config.settings.calendarSort">
                   <option v-for="option in calendarSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>

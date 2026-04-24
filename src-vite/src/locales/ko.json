@@ -184,7 +184,9 @@
       "select_mode": "선택 항목",
       "select_count": "{count}개 선택됨",
       "sort_type_options": [
-        "시간",
+        "촬영일",
+        "생성일",
+        "수정일",
         "이름",
         "크기",
         "픽셀 크기",
@@ -862,6 +864,7 @@
         "날짜 (최신 순)"
       ],
       "calendar_sort": "캘린더",
+      "calendar_sort_hint": "촬영일 또는 수정일 기준",
       "calendar_sort_options": [
         "오래된 순",
         "최신 순"

@@ -184,7 +184,9 @@
       "select_mode": "Seleção",
       "select_count": "{count} selecionados",
       "sort_type_options": [
-        "Tempo",
+        "Data de captura",
+        "Data de criação",
+        "Data de modificação",
         "Nome",
         "Tamanho",
         "Dimensão",
@@ -862,6 +864,7 @@
         "Data (Mais recentes primeiro)"
       ],
       "calendar_sort": "Calendário",
+      "calendar_sort_hint": "Com base na data de captura ou na data de modificação",
       "calendar_sort_options": [
         "Mais antigos primeiro",
         "Mais recentes primeiro"

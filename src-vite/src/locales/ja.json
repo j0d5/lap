@@ -184,7 +184,9 @@
       "select_mode": "選択項目",
       "select_count": "{count} 個選択中",
       "sort_type_options": [
-        "時間",
+        "撮影日",
+        "作成日",
+        "更新日",
         "名前",
         "サイズ",
         "寸法",
@@ -862,6 +864,7 @@
         "日付 (新しい順)"
       ],
       "calendar_sort": "カレンダー",
+      "calendar_sort_hint": "撮影日または更新日に基づく",
       "calendar_sort_options": [
         "古い順",
         "新しい順"

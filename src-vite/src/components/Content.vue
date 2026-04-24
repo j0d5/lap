@@ -2004,7 +2004,7 @@ const topProgressPercent = computed(() => thumbProgressPercent.value);
 function buildScanStreamQueryParams() {
   return {
     searchFileType: 0,
-    sortType: 5, // internal sort: by id asc (insert/scan order)
+    sortType: 7, // internal sort: by id asc (insert/scan order)
     sortOrder: 0,
     searchFileName: "",
     searchAllSubfolders: libConfig.album.folderPath || "",
@@ -3143,7 +3143,7 @@ async function updateContent(force = false) {
     } else {   // filename search
       if (libConfig.search.fileName) {
         contentTitle.value = localeMsg.value.search.filename_search + ' - ' + libConfig.search.fileName;
-        getFileList({ searchFileName: libConfig.search.fileName, sortType: 1, sortOrder: 0 }, requestId); // sort by name
+        getFileList({ searchFileName: libConfig.search.fileName, sortType: 3, sortOrder: 0 }, requestId); // sort by name
       } else {
         contentTitle.value = localeMsg.value.search.filename_search;
       }

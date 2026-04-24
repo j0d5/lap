@@ -184,7 +184,9 @@
       "select_mode": "Multi-select mode",
       "select_count": "{count} selected",
       "sort_type_options": [
-        "Time",
+        "Taken Date",
+        "Created Date",
+        "Modified Date",
         "Name",
         "Size",
         "Dimension",
@@ -862,6 +864,7 @@
         "Date (Newest first)"
       ],
       "calendar_sort": "Calendar",
+      "calendar_sort_hint": "Based on taken date or modified date",
       "calendar_sort_options": [
         "Oldest first",
         "Newest first"

@@ -184,7 +184,9 @@
       "select_mode": "Auswahl",
       "select_count": "{count} ausgewählt",
       "sort_type_options": [
-        "Zeit",
+        "Aufnahmedatum",
+        "Erstellungsdatum",
+        "Änderungsdatum",
         "Name",
         "Größe",
         "Dimension",
@@ -862,6 +864,7 @@
         "Datum (Neueste zuerst)"
       ],
       "calendar_sort": "Kalender",
+      "calendar_sort_hint": "Basierend auf dem Aufnahmedatum oder dem Änderungsdatum",
       "calendar_sort_options": [
         "Älteste zuerst",
         "Neueste zuerst"

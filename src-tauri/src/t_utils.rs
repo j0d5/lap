@@ -809,7 +809,7 @@ pub fn get_folder_files(
     };
 
     // sort
-    if sort_type == 4 {
+    if sort_type == 6 {
         // random
         use rand::seq::SliceRandom;
         let mut rng = rand::thread_rng();
@@ -817,17 +817,20 @@ pub fn get_folder_files(
     } else {
         files.sort_by(|a, b| {
             let ordering = match sort_type {
-                0 => a.taken_date.cmp(&b.taken_date), // Time
-                1 => convert_to_pinyin(&a.name.to_lowercase()) // name
+                0 => a.taken_date.cmp(&b.taken_date), // Taken Date
+                1 => a.created_at.cmp(&b.created_at), // Created Date
+                2 => a.modified_at.cmp(&b.modified_at), // Modified Date
+                3 => convert_to_pinyin(&a.name.to_lowercase()) // name
                     .cmp(&convert_to_pinyin(&b.name.to_lowercase())), // support pinyin
-                2 => a.size.cmp(&b.size),             // size
-                3 => {
+                4 => a.size.cmp(&b.size),             // size
+                5 => {
                     if a.width == b.width {
                         a.height.cmp(&b.height)
                     } else {
                         a.width.cmp(&b.width)
                     }
                 } // dimension
+                7 => a.id.cmp(&b.id),                 // ID sort
                 _ => a.taken_date.cmp(&b.taken_date), // Default to taken date
             };
             if sort_order == 1 {
