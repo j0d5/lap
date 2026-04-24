@@ -34,6 +34,14 @@ pub fn get_app_config() -> Result<AppConfig, String> {
     t_config::load_app_config()
 }
 
+/// set last selected item index
+#[tauri::command]
+pub fn set_last_selected_item_index(index: i64) -> Result<(), String> {
+    let mut config = t_config::load_app_config()?;
+    config.last_selected_item_index = index;
+    t_config::save_app_config(&config)
+}
+
 #[tauri::command]
 pub fn add_library(name: &str) -> Result<Library, String> {
     t_config::add_library(name)

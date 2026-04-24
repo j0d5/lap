@@ -570,7 +570,7 @@ import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQuery
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
          updateFileInfo, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
-         openFileWithApp, getIndexRecoveryInfo, clearIndexRecoveryInfo,
+         openFileWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupGetGroup, dedupDeleteSelected, getQueryFilePosition } from '@/common/api'; 
 import { config, libConfig } from '@/common/config';
 import { getSmartTagById, SMART_TAG_SEARCH_THRESHOLD } from '@/common/smartTags';
@@ -758,6 +758,8 @@ const totalFileCount = ref(0);    // total files' count
 const totalFileSize = ref(0);     // total files' size
 
 const selectedItemIndex = ref(-1);
+let pendingInitialSelectedIndex = -1;
+let hasRestoredInitialSelection = false;
 
 // mutil select mode
 const selectMode = ref(false);
@@ -2241,6 +2243,10 @@ async function cancelIndexing() {
 }
 
 onMounted( async() => {
+  const appConfig = await getAppConfig();
+  pendingInitialSelectedIndex = Number(appConfig?.last_selected_item_index ?? -1);
+  hasRestoredInitialSelection = false;
+
   window.addEventListener('keydown', handleLocalKeyDown);
   unlistenKeydown = await listen('global-keydown', handleKeyDown);
 
@@ -2428,6 +2434,16 @@ onMounted( async() => {
   });
 });
 
+function restoreInitialSelectionIfNeeded() {
+  if (hasRestoredInitialSelection || pendingInitialSelectedIndex < 0 || fileList.value.length === 0) {
+    return;
+  }
+
+  selectedItemIndex.value = Math.min(pendingInitialSelectedIndex, fileList.value.length - 1);
+  hasRestoredInitialSelection = true;
+  void updateSelectedImage(selectedItemIndex.value);
+}
+
 onBeforeUnmount(() => {
   if (scanStreamFlushTimer) {
     clearTimeout(scanStreamFlushTimer);
@@ -2590,6 +2606,7 @@ watch(() => selectedItemIndex.value, (newIndex, oldIndex) => {
   if(oldIndex >= 0 && oldIndex !== newIndex && fileList.value[oldIndex]?.rotate >= 360) {
     fileList.value[oldIndex].rotate %= 360;
   }
+  void setLastSelectedItemIndex(Number(newIndex ?? -1));
   updateSelectedImage(newIndex);
 });
 
@@ -2863,6 +2880,7 @@ async function getFileList(
         size: 0,
       }));
       markDedupSourceUpdated(requestId);
+      restoreInitialSelectionIfNeeded();
       restoreScrollAfterRefresh();
       if (totalFileCount.value === 0) {
         openImageViewer(0, false, true);
@@ -2923,6 +2941,7 @@ async function getImageSearchFileList(
         totalFileCount.value = fileList.value.length;
         totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
         markDedupSourceUpdated(requestId);
+        restoreInitialSelectionIfNeeded();
         openImageViewer(0, false, true);
 
         // Reset visible range tracking when changing views
@@ -3041,6 +3060,7 @@ async function updateContent(force = false) {
             totalFileCount.value = fileList.value.length;
             totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
             markDedupSourceUpdated(requestId);
+            restoreInitialSelectionIfNeeded();
             restoreScrollAfterRefresh();
             isLoading.value = false;
             hasLoadedInitialResult.value = true;

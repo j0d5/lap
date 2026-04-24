@@ -242,8 +242,14 @@ pub struct Library {
 pub struct AppConfig {
     #[serde(default)]
     pub debug: bool,
+    #[serde(default = "default_last_selected_item_index")]
+    pub last_selected_item_index: i64,
     pub current_library_id: String,
     pub libraries: Vec<Library>,
+}
+
+fn default_last_selected_item_index() -> i64 {
+    -1
 }
 
 impl Default for AppConfig {
@@ -251,6 +257,7 @@ impl Default for AppConfig {
         let now = chrono::Utc::now().timestamp();
         Self {
             debug: false,
+            last_selected_item_index: default_last_selected_item_index(),
             current_library_id: "default".to_string(),
             libraries: vec![Library {
                 id: "default".to_string(),
@@ -542,6 +549,7 @@ fn recover_app_config_from_library_dbs() -> Result<AppConfig, String> {
 
     Ok(AppConfig {
         debug: false,
+        last_selected_item_index: default_last_selected_item_index(),
         current_library_id,
         libraries,
     })

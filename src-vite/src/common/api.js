@@ -18,6 +18,17 @@ export async function getAppConfig() {
   return null;
 }
 
+// set last selected item index
+export async function setLastSelectedItemIndex(index) {
+  try {
+    await invoke('set_last_selected_item_index', { index });
+    return true;
+  } catch (error) {
+    console.error('Failed to set last selected item index:', error);
+  }
+  return false;
+}
+
 // add a new library
 export async function addLibrary(name) {
   try {

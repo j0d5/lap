@@ -178,6 +178,7 @@ async fn main() {
         .invoke_handler(tauri::generate_handler![
             // library
             t_cmds::get_app_config,
+            t_cmds::set_last_selected_item_index,
             t_cmds::add_library,
             t_cmds::edit_library,
             t_cmds::remove_library,
