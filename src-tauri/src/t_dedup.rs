@@ -1,4 +1,5 @@
 use crate::t_sqlite::{AFile, QueryParams};
+use crate::t_utils;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -30,6 +31,14 @@ impl Default for DedupScanStatus {
             groups: 0,
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct DedupDeleteResult {
+    pub deleted_file_ids: Vec<i64>,
+    pub failed_count: usize,
+    pub errors: Vec<String>,
 }
 
 #[derive(Default)]
@@ -775,7 +784,7 @@ pub fn set_keep(group_id: i64, file_id: i64) -> Result<(), String> {
 pub fn delete_selected(
     group_ids: Option<Vec<i64>>,
     file_ids: Option<Vec<i64>>,
-) -> Result<(), String> {
+) -> Result<DedupDeleteResult, String> {
     let mut conn = get_db_conn()?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
@@ -839,30 +848,36 @@ pub fn delete_selected(
     tx.commit().map_err(|e| e.to_string())?;
 
     let mut failures: Vec<String> = Vec::new();
+    let mut deleted_file_ids: Vec<i64> = Vec::new();
     for (file_id, file_path) in files_to_delete {
-        if let Err(e) = trash::delete(&file_path) {
+        if let Err(e) = t_utils::trash_path(&file_path) {
             failures.push(format!("Failed to move to trash: {} ({})", file_path, e));
             continue;
         }
         match AFile::delete(file_id) {
             Ok(0) => failures.push(format!("File not removed from DB: id={}", file_id)),
-            Ok(_) => {}
+            Ok(_) => deleted_file_ids.push(file_id),
             Err(e) => failures.push(format!("Failed to delete DB row for id={}: {}", file_id, e)),
         }
     }
 
-    // Clean up empty groups
-    let conn = get_db_conn()?;
-    conn.execute(
-        "DELETE FROM duplicate_groups 
-         WHERE id NOT IN (SELECT DISTINCT group_id FROM duplicate_group_items)",
-        [],
-    )
-    .map_err(|e| e.to_string())?;
-
-    if !failures.is_empty() {
-        return Err(failures.join("; "));
+    // Clean up empty groups. Report cleanup errors without hiding earlier partial deletes.
+    match get_db_conn() {
+        Ok(conn) => {
+            if let Err(e) = conn.execute(
+                "DELETE FROM duplicate_groups 
+                 WHERE id NOT IN (SELECT DISTINCT group_id FROM duplicate_group_items)",
+                [],
+            ) {
+                failures.push(format!("Failed to clean up empty duplicate groups: {}", e));
+            }
+        }
+        Err(e) => failures.push(format!("Failed to open DB for duplicate group cleanup: {}", e)),
     }
 
-    Ok(())
+    Ok(DedupDeleteResult {
+        deleted_file_ids,
+        failed_count: failures.len(),
+        errors: failures,
+    })
 }

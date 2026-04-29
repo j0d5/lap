@@ -307,7 +307,7 @@
     },
     "update_image": {
       "success": "Image mise à jour",
-      "failed": "Impossible de mettre à jour l'image depuis le fichier. Le fichier n'existe peut-être pas."
+      "failed": "Impossible de mettre à jour l'image depuis le fichier."
     },
     "image_viewer": {
       "first_image": "Première image",
@@ -481,14 +481,14 @@
       "content": "'{folder}' et son contenu seront supprimés.",
       "ok": "Supprimer",
       "success": "'{folder}' supprimé.",
-      "error": "Impossible de supprimer le dossier. Le dossier n'existe peut-être pas."
+      "error": "Impossible de supprimer le dossier."
     },
     "trash_folder": {
       "title": "Mettre à la corbeille",
       "content": "'{folder}' ira à la corbeille.",
       "ok": "Corbeille",
       "success": "'{folder}' mis à la corbeille.",
-      "error": "Impossible de mettre le dossier à la corbeille. Le dossier n'existe peut-être pas."
+      "error": "Impossible de mettre le dossier à la corbeille."
     },
     "move_to": {
       "title": "Déplacer '{source}' vers",
@@ -515,28 +515,28 @@
       "content": "'{file}' sera supprimé.",
       "ok": "Supprimer",
       "success": "'{file}' supprimé.",
-      "error": "Impossible de supprimer le fichier. Le fichier n'existe peut-être pas."
+      "error": "Impossible de supprimer le fichier."
     },
     "delete_files": {
       "title": "Supprimer fichiers",
       "content": "{count} fichiers seront supprimés.",
       "ok": "Supprimer tout",
       "success": "{count} fichiers supprimés.",
-      "error": "Impossible de supprimer les fichiers sélectionnés. Les fichiers n'existent peut-être pas."
+      "error": "Impossible de supprimer les fichiers sélectionnés."
     },
     "trash_file": {
       "title": "Mettre à la corbeille",
       "content": "'{file}' ira à la corbeille.",
       "ok": "Corbeille",
       "success": "'{file}' mis à la corbeille.",
-      "error": "Impossible de mettre le fichier à la corbeille. Le fichier n'existe peut-être pas."
+      "error": "Impossible de mettre le fichier à la corbeille."
     },
     "trash_files": {
       "title": "Mettre à la corbeille",
       "content": "{count} fichiers iront à la corbeille.",
       "ok": "Corbeille",
       "success": "{count} fichiers mis à la corbeille.",
-      "error": "Impossible de mettre les fichiers sélectionnés à la corbeille. Les fichiers n'existent peut-être pas."
+      "error": "Impossible de mettre les fichiers sélectionnés à la corbeille."
     },
     "new_tag": {
       "title": "Nouveau tag",
@@ -549,7 +549,7 @@
       "content": "'{tag}' sera supprimé.",
       "ok": "Supprimer",
       "success": "'{tag}' supprimé.",
-      "error": "Impossible de supprimer le tag. Le tag n'existe peut-être pas."
+      "error": "Impossible de supprimer le tag."
     },
     "edit_comment": {
       "title": "Modifier commentaire",
@@ -775,7 +775,7 @@
       "aborted": "Annulé",
       "network": "Erreur réseau",
       "decode": "Erreur décodage",
-      "format": "Format vidéo non supporté ou fichier peut-être corrompu.",
+      "format": "Format vidéo non supporté ou fichier corrompu.",
       "external_player_recommended": "Cette vidéo nécessite un transcodage de compatibilité pour être lue ici. Pour les vidéos longues, Lap recommande d'utiliser un lecteur externe au lieu d'attendre le traitement en arrière-plan.",
       "open_in_external_app": "Ouvrir dans un lecteur externe",
       "open_in_external_app_named": "Ouvrir la vidéo dans {app}...",

@@ -382,7 +382,7 @@ pub fn copy_folder(folder_path: &str, new_folder_path: &str) -> Option<String> {
 #[tauri::command]
 pub fn delete_folder(folder_path: &str) -> Result<usize, String> {
     // trash the folder
-    trash::delete(folder_path).map_err(|e| e.to_string())?;
+    t_utils::trash_path(folder_path)?;
 
     // delete the folder and all children from db
     AFolder::delete_folder(folder_path)
@@ -580,7 +580,7 @@ pub fn copy_file(file_path: &str, new_folder_path: &str) -> Option<String> {
 #[tauri::command]
 pub fn delete_file(file_id: i64, file_path: &str) -> Result<usize, String> {
     // trash the file
-    trash::delete(file_path).map_err(|e| e.to_string())?;
+    t_utils::trash_path(file_path)?;
 
     // delete the file from db
     AFile::delete(file_id).map_err(|e| format!("Error while deleting file from DB: {}", e))
@@ -1008,7 +1008,7 @@ pub fn dedup_set_keep(group_id: i64, file_id: i64) -> Result<(), String> {
 pub fn dedup_delete_selected(
     group_ids: Option<Vec<i64>>,
     file_ids: Option<Vec<i64>>,
-) -> Result<(), String> {
+) -> Result<crate::t_dedup::DedupDeleteResult, String> {
     crate::t_dedup::delete_selected(group_ids, file_ids)
 }
 

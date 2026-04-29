@@ -307,7 +307,7 @@
     },
     "update_image": {
       "success": "图片已从文件中更新",
-      "failed": "从文件更新图片失败。文件可能不存在。"
+      "failed": "从文件更新图片失败。"
     },
     "image_viewer": {
       "first_image": "已经是第一张图片",
@@ -481,14 +481,14 @@
       "content": "文件夹 '{folder}' 及其所有内容将被删除。",
       "ok": "删除",
       "success": "文件夹 '{folder}' 已删除。",
-      "error": "删除文件夹失败。文件夹可能不存在。"
+      "error": "删除文件夹失败。"
     },
     "trash_folder": {
       "title": "移到废纸篓",
       "content": "文件夹 '{folder}' 将被移到废纸篓。",
       "ok": "移到废纸篓",
       "success": "文件夹 '{folder}' 已移到废纸篓。",
-      "error": "将文件夹移到废纸篓失败。文件夹可能不存在。"
+      "error": "将文件夹移到废纸篓失败。"
     },
     "move_to": {
       "title": "移动 '{source}' 到",
@@ -515,28 +515,28 @@
       "content": "文件 '{file}' 将被删除。",
       "ok": "删除",
       "success": "文件 '{file}' 已删除。",
-      "error": "删除文件失败。文件可能不存在。"
+      "error": "删除文件失败。"
     },
     "delete_files": {
       "title": "删除文件",
       "content": "{count} 个选择的文件将被删除。",
       "ok": "全部删除",
       "success": "{count} 个选择的文件已删除。",
-      "error": "删除所选文件失败。文件可能不存在。"
+      "error": "删除所选文件失败。"
     },
     "trash_file": {
       "title": "移到废纸篓",
       "content": "文件 '{file}' 将被移到废纸篓。",
       "ok": "移到废纸篓",
       "success": "文件 '{file}' 已移到废纸篓。",
-      "error": "将文件移到废纸篓失败。文件可能不存在。"
+      "error": "将文件移到废纸篓失败。"
     },
     "trash_files": {
       "title": "移到废纸篓",
       "content": "{count} 个选择的文件将被移到废纸篓。",
       "ok": "全部移到废纸篓",
       "success": "{count} 个选择的文件已移到废纸篓。",
-      "error": "将所选文件移到废纸篓失败。文件可能不存在。"
+      "error": "将所选文件移到废纸篓失败。"
     },
     "new_tag": {
       "title": "新建标签",
@@ -549,7 +549,7 @@
       "content": "标签 '{tag}' 将被删除。",
       "ok": "删除",
       "success": "标签 '{tag}' 已删除。",
-      "error": "删除标签失败。标签可能不存在。"
+      "error": "删除标签失败。"
     },
     "edit_comment": {
       "title": "编辑备注",
@@ -775,7 +775,7 @@
       "aborted": "视频加载被中止",
       "network": "网络错误导致视频下载失败",
       "decode": "视频解码错误",
-      "format": "视频格式暂不支持，或者文件可能已损坏。",
+      "format": "视频格式暂不支持，或者文件已损坏。",
       "external_player_recommended": "该视频需要先做兼容转码后才能在这里播放。对于长视频，Lap 更建议直接使用外部播放器，而不是等待后台处理。",
       "open_in_external_app": "使用外部播放器打开",
       "open_in_external_app_named": "在 {app} 中打开...",

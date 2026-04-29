@@ -307,7 +307,7 @@
     },
     "update_image": {
       "success": "Bild aktualisiert",
-      "failed": "Bild konnte nicht aus der Datei aktualisiert werden. Die Datei existiert möglicherweise nicht."
+      "failed": "Bild konnte nicht aus der Datei aktualisiert werden."
     },
     "image_viewer": {
       "first_image": "Erstes Bild",
@@ -481,14 +481,14 @@
       "content": "'{folder}' und Inhalt werden gelöscht.",
       "ok": "Löschen",
       "success": "'{folder}' gelöscht.",
-      "error": "Ordner konnte nicht gelöscht werden. Der Ordner existiert möglicherweise nicht."
+      "error": "Ordner konnte nicht gelöscht werden."
     },
     "trash_folder": {
       "title": "In Papierkorb",
       "content": "'{folder}' wird in den Papierkorb verschoben.",
       "ok": "Papierkorb",
       "success": "'{folder}' in Papierkorb.",
-      "error": "Ordner konnte nicht in den Papierkorb verschoben werden. Der Ordner existiert möglicherweise nicht."
+      "error": "Ordner konnte nicht in den Papierkorb verschoben werden."
     },
     "move_to": {
       "title": "Verschiebe '{source}' nach",
@@ -515,28 +515,28 @@
       "content": "'{file}' wird gelöscht.",
       "ok": "Löschen",
       "success": "'{file}' gelöscht.",
-      "error": "Datei konnte nicht gelöscht werden. Die Datei existiert möglicherweise nicht."
+      "error": "Datei konnte nicht gelöscht werden."
     },
     "delete_files": {
       "title": "Dateien löschen",
       "content": "{count} Dateien werden gelöscht.",
       "ok": "Alle löschen",
       "success": "{count} Dateien gelöscht.",
-      "error": "Ausgewählte Dateien konnten nicht gelöscht werden. Die Dateien existieren möglicherweise nicht."
+      "error": "Ausgewählte Dateien konnten nicht gelöscht werden."
     },
     "trash_file": {
       "title": "In Papierkorb",
       "content": "'{file}' wird in den Papierkorb verschoben.",
       "ok": "Papierkorb",
       "success": "'{file}' in Papierkorb.",
-      "error": "Datei konnte nicht in den Papierkorb verschoben werden. Die Datei existiert möglicherweise nicht."
+      "error": "Datei konnte nicht in den Papierkorb verschoben werden."
     },
     "trash_files": {
       "title": "In Papierkorb",
       "content": "{count} Dateien werden in den Papierkorb verschoben.",
       "ok": "Papierkorb",
       "success": "{count} Dateien in Papierkorb.",
-      "error": "Ausgewählte Dateien konnten nicht in den Papierkorb verschoben werden. Die Dateien existieren möglicherweise nicht."
+      "error": "Ausgewählte Dateien konnten nicht in den Papierkorb verschoben werden."
     },
     "new_tag": {
       "title": "Neuer Tag",
@@ -549,7 +549,7 @@
       "content": "'{tag}' wird gelöscht.",
       "ok": "Löschen",
       "success": "'{tag}' gelöscht.",
-      "error": "Tag konnte nicht gelöscht werden. Der Tag existiert möglicherweise nicht."
+      "error": "Tag konnte nicht gelöscht werden."
     },
     "edit_comment": {
       "title": "Kommentar bearbeiten",

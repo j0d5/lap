@@ -28,6 +28,27 @@ use walkdir::WalkDir; // https://docs.rs/walkdir/2.5.0/walkdir/
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
+pub fn path_exists(path: &str) -> bool {
+    fs::symlink_metadata(path).is_ok()
+}
+
+pub fn trash_path(path: &str) -> Result<(), String> {
+    if !path_exists(path) {
+        return Err(format!("Path does not exist: {}", path));
+    }
+
+    trash::delete(path).map_err(|e| e.to_string())?;
+
+    if path_exists(path) {
+        return Err(format!(
+            "Failed to move path to Trash. The path still exists on disk: {}",
+            path
+        ));
+    }
+
+    Ok(())
+}
+
 // reverse geocoder
 #[derive(serde::Deserialize)]
 pub struct GeoRecord {

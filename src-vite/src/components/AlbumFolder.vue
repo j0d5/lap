@@ -578,10 +578,11 @@ const clickCopyTo = async () => {
 
 /// trash selected folder
 const clickTrashFolder = async () => {
+  const folderName = selectedFolder.value?.name || '';
   const isDeleted = await deleteFolder(selection.folderPath.value);
   if (isDeleted) {
     const deletedFolderPath = selection.folderPath.value;
-    
+
     // The deleted folder is a direct child of props.children in this component's context
     // (since the ContextMenu is rendered for each child in the v-for loop)
     // So we can directly remove it from props.children using splice
@@ -591,19 +592,22 @@ const clickTrashFolder = async () => {
         (props.children as Folder[]).splice(index, 1);
       }
     }
-    
+
     // Navigate to parent folder (derive parent path from deleted folder's path)
     const lastSlashIndex = deletedFolderPath.lastIndexOf('/');
     const parentPath = lastSlashIndex > 0 ? deletedFolderPath.substring(0, lastSlashIndex) : props.rootPath;
     selection.folderPath.value = parentPath;
-    
+
     // Try to find parent folder to get its id
     const parentFolder = getFolderByPath(props.children, parentPath);
     if (parentFolder) {
       selection.folderId.value = parentFolder.id;
     }
-    
+
     showTrashFolderMsgbox.value = false;
+    toast.success(
+      localeMsg.value.msgbox.trash_folder.success.replace('{folder}', folderName)
+    );
   } else {
     console.log('AlbumFolder.vue-clickTrashFolder', localeMsg.value.msgbox.trash_folder.error);
     toast.error(localeMsg.value.msgbox.trash_folder.error);

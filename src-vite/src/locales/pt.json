@@ -307,7 +307,7 @@
     },
     "update_image": {
       "success": "Imagem atualizada",
-      "failed": "Falha ao atualizar a imagem a partir do arquivo. O arquivo pode não existir."
+      "failed": "Falha ao atualizar a imagem a partir do arquivo."
     },
     "image_viewer": {
       "first_image": "Primeira imagem",
@@ -481,14 +481,14 @@
       "content": "'{folder}' e conteúdo serão excluídos.",
       "ok": "Excluir",
       "success": "'{folder}' excluída.",
-      "error": "Falha ao excluir a pasta. A pasta pode não existir."
+      "error": "Falha ao excluir a pasta."
     },
     "trash_folder": {
       "title": "Mover para lixeira",
       "content": "'{folder}' irá para a lixeira.",
       "ok": "Lixeira",
       "success": "'{folder}' movida para a lixeira.",
-      "error": "Falha ao mover a pasta para a lixeira. A pasta pode não existir."
+      "error": "Falha ao mover a pasta para a lixeira."
     },
     "move_to": {
       "title": "Mover '{source}' para",
@@ -515,28 +515,28 @@
       "content": "O arquivo '{file}' será excluído.",
       "ok": "Excluir",
       "success": "'{file}' excluído.",
-      "error": "Falha ao excluir o arquivo. O arquivo pode não existir."
+      "error": "Falha ao excluir o arquivo."
     },
     "delete_files": {
       "title": "Excluir arquivos",
       "content": "{count} arquivos serão excluídos.",
       "ok": "Excluir tudo",
       "success": "{count} arquivos excluídos.",
-      "error": "Falha ao excluir os arquivos selecionados. Os arquivos podem não existir."
+      "error": "Falha ao excluir os arquivos selecionados."
     },
     "trash_file": {
       "title": "Mover para lixeira",
       "content": "O arquivo '{file}' irá para a lixeira.",
       "ok": "Lixeira",
       "success": "'{file}' na lixeira.",
-      "error": "Falha ao mover o arquivo para a lixeira. O arquivo pode não existir."
+      "error": "Falha ao mover o arquivo para a lixeira."
     },
     "trash_files": {
       "title": "Mover para lixeira",
       "content": "{count} arquivos irão para a lixeira.",
       "ok": "Lixeira",
       "success": "{count} arquivos na lixeira.",
-      "error": "Falha ao mover os arquivos selecionados para a lixeira. Os arquivos podem não existir."
+      "error": "Falha ao mover os arquivos selecionados para a lixeira."
     },
     "new_tag": {
       "title": "Nova tag",
@@ -549,7 +549,7 @@
       "content": "A tag '{tag}' será excluída.",
       "ok": "Excluir",
       "success": "'{tag}' excluída.",
-      "error": "Falha ao excluir a tag. A tag pode não existir."
+      "error": "Falha ao excluir a tag."
     },
     "edit_comment": {
       "title": "Editar comentário",
@@ -775,7 +775,7 @@
       "aborted": "Abortado",
       "network": "Erro de rede",
       "decode": "Erro de decodificação",
-      "format": "Formato de vídeo não suportado ou o arquivo pode estar corrompido.",
+      "format": "Formato de vídeo não suportado ou o arquivo está corrompido.",
       "external_player_recommended": "Este vídeo precisa de transcodificação de compatibilidade antes de ser reproduzido aqui. Para vídeos longos, o Lap recomenda o uso de um player externo em vez de aguardar o processamento em segundo plano.",
       "open_in_external_app": "Abrir no player externo",
       "open_in_external_app_named": "Abrir vídeo em {app}...",

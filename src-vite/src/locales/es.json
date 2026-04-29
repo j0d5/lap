@@ -307,7 +307,7 @@
     },
     "update_image": {
       "success": "Imagen actualizada",
-      "failed": "No se pudo actualizar la imagen desde el archivo. Puede que el archivo no exista."
+      "failed": "No se pudo actualizar la imagen desde el archivo."
     },
     "image_viewer": {
       "first_image": "Es la primera imagen",
@@ -481,14 +481,14 @@
       "content": "'{folder}' y su contenido serán eliminados.",
       "ok": "Eliminar",
       "success": "'{folder}' eliminada.",
-      "error": "No se pudo eliminar la carpeta. Puede que la carpeta no exista."
+      "error": "No se pudo eliminar la carpeta."
     },
     "trash_folder": {
       "title": "Mover a papelera",
       "content": "'{folder}' irá a la papelera.",
       "ok": "A papelera",
       "success": "'{folder}' movida a papelera.",
-      "error": "No se pudo mover la carpeta a la papelera. Puede que la carpeta no exista."
+      "error": "No se pudo mover la carpeta a la papelera."
     },
     "move_to": {
       "title": "Mover '{source}' a",
@@ -515,28 +515,28 @@
       "content": "'{file}' será eliminado.",
       "ok": "Eliminar",
       "success": "'{file}' eliminado.",
-      "error": "No se pudo eliminar el archivo. Puede que el archivo no exista."
+      "error": "No se pudo eliminar el archivo."
     },
     "delete_files": {
       "title": "Eliminar archivos",
       "content": "{count} archivos serán eliminados.",
       "ok": "Eliminar todo",
       "success": "{count} archivos eliminados.",
-      "error": "No se pudieron eliminar los archivos seleccionados. Puede que los archivos no existan."
+      "error": "No se pudieron eliminar los archivos seleccionados."
     },
     "trash_file": {
       "title": "A papelera",
       "content": "'{file}' irá a la papelera.",
       "ok": "A papelera",
       "success": "'{file}' en papelera.",
-      "error": "No se pudo mover el archivo a la papelera. Puede que el archivo no exista."
+      "error": "No se pudo mover el archivo a la papelera."
     },
     "trash_files": {
       "title": "A papelera",
       "content": "{count} archivos irán a la papelera.",
       "ok": "A papelera",
       "success": "{count} archivos en papelera.",
-      "error": "No se pudieron mover los archivos seleccionados a la papelera. Puede que los archivos no existan."
+      "error": "No se pudieron mover los archivos seleccionados a la papelera."
     },
     "new_tag": {
       "title": "Nueva etiqueta",
@@ -549,7 +549,7 @@
       "content": "'{tag}' será eliminada.",
       "ok": "Eliminar",
       "success": "'{tag}' eliminada.",
-      "error": "No se pudo eliminar la etiqueta. Puede que la etiqueta no exista."
+      "error": "No se pudo eliminar la etiqueta."
     },
     "edit_comment": {
       "title": "Editar comentario",
@@ -775,7 +775,7 @@
       "aborted": "Abortado",
       "network": "Error red",
       "decode": "Error decodificación",
-      "format": "Formato de vídeo no admitido o el archivo puede estar dañado.",
+      "format": "Formato de vídeo no admitido o el archivo está dañado.",
       "external_player_recommended": "Este vídeo necesita una transcodificación de compatibilidad antes de poder reproducirse aquí. Para vídeos largos, Lap recomienda utilizar un reproductor externo en lugar de esperar al procesamiento en segundo plano.",
       "open_in_external_app": "Abrir en un reproductor externo",
       "open_in_external_app_named": "Abrir vídeo en {app}...",

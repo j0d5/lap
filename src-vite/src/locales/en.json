@@ -307,7 +307,7 @@
     },
     "update_image": {
       "success": "The image has been updated from the file",
-      "failed": "Failed to update image from file. The file may not exist."
+      "failed": "Failed to update image from file."
     },
     "image_viewer": {
       "first_image": "Already the first image",
@@ -481,14 +481,14 @@
       "content": "The folder '{folder}' and all its contents will be deleted.",
       "ok": "Delete",
       "success": "The folder '{folder}' has been deleted.",
-      "error": "Failed to delete folder. The folder may not exist."
+      "error": "Failed to delete folder."
     },
     "trash_folder": {
       "title": "Move to trash",
       "content": "The folder '{folder}' will be trashed.",
       "ok": "Trash",
       "success": "The folder '{folder}' has been trashed.",
-      "error": "Failed to move folder to Trash. The folder may not exist."
+      "error": "Failed to move folder to Trash."
     },
     "move_to": {
       "title": "Move '{source}' to",
@@ -515,28 +515,28 @@
       "content": "The file '{file}' will be deleted.",
       "ok": "Delete",
       "success": "The file '{file}' has been deleted.",
-      "error": "Failed to delete file. The file may not exist."
+      "error": "Failed to delete file."
     },
     "delete_files": {
       "title": "Delete files",
       "content": "{count} selected files will be deleted.",
       "ok": "Delete all",
       "success": "{count} selected files have been deleted.",
-      "error": "Failed to delete selected files. The files may not exist."
+      "error": "Failed to delete selected files."
     },
     "trash_file": {
       "title": "Move to trash",
       "content": "The file '{file}' will be trashed.",
       "ok": "Trash",
       "success": "The file '{file}' has been trashed.",
-      "error": "Failed to move file to Trash. The file may not exist."
+      "error": "Failed to move file to Trash."
     },
     "trash_files": {
       "title": "Move to trash",
       "content": "{count} selected files will be trashed.",
       "ok": "Trash all",
       "success": "{count} selected files have been trashed.",
-      "error": "Failed to move selected files to Trash. The files may not exist."
+      "error": "Failed to move selected files to Trash."
     },
     "new_tag": {
       "title": "New tag",
@@ -549,7 +549,7 @@
       "content": "The tag '{tag}' will be deleted.",
       "ok": "Delete",
       "success": "The tag '{tag}' has been deleted.",
-      "error": "Failed to delete tag. The tag may not exist."
+      "error": "Failed to delete tag."
     },
     "edit_comment": {
       "title": "Edit comment",
@@ -775,7 +775,7 @@
       "aborted": "Video loading was canceled",
       "network": "Network error while loading video",
       "decode": "Video decoding error",
-      "format": "Unsupported video format or the file might be corrupted.",
+      "format": "Unsupported video format or the file is corrupted.",
       "external_player_recommended": "This video needs compatibility transcoding before it can play here. For long videos, Lap recommends using an external player instead of waiting for background processing.",
       "open_in_external_app": "Open in external player",
       "open_in_external_app_named": "Open video in {app}...",

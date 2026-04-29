@@ -566,7 +566,7 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { getAlbum, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFolderFiles, getFolderThumbCount,
-         copyImage, renameFile, moveFile, copyFile, deleteFile, deleteDbFile, editFileComment, getFileThumb, getFileInfo,
+         copyImage, renameFile, moveFile, copyFile, deleteFile, editFileComment, getFileThumb, getFileInfo,
          setFileRotate, getFileHasTags, setFileFavorite, setFileRating, getTagsForFile, searchSimilarImages, generateEmbedding, 
          revealPath, getTagName, indexAlbum, listenIndexProgress, listenIndexFinished, setAlbumCover,
          updateFileInfo, addFileToDb, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
@@ -3773,6 +3773,7 @@ const onCopyTo = async () => {
 const onTrashFile = async () => {
   const deletedFileIds: number[] = [];
   const affectedAlbumIds = new Set<number>();
+  let failedDeleteCount = 0;
   const shouldAdvanceDedup =
     isDedupPanelOpen.value &&
     !!dedupTrashGroupKey.value;
@@ -3781,37 +3782,55 @@ const onTrashFile = async () => {
   try {
     if (dedupDeleteFileIds.value.length > 0) {
       const ids = [...dedupDeleteFileIds.value];
-      fileList.value
-        .filter(file => ids.includes(file.id))
-        .forEach(file => affectedAlbumIds.add(Number(file.album_id || 0)));
-      const success = await dedupDeleteSelected(null, ids);
-      if (success !== undefined) {
-        deletedFileIds.push(...ids);
+      const result = await dedupDeleteSelected(null, ids);
+      if (result !== undefined) {
+        const resultDeletedIds = Array.isArray(result?.deletedFileIds)
+          ? result.deletedFileIds.map((id: any) => Number(id)).filter((id: number) => id > 0)
+          : [];
+        deletedFileIds.push(...resultDeletedIds);
+        fileList.value
+          .filter(file => deletedFileIds.includes(file.id))
+          .forEach(file => affectedAlbumIds.add(Number(file.album_id || 0)));
         closeTrashMsgbox();
         await updateContent();
-        await refreshAffectedAlbums(Array.from(affectedAlbumIds));
-        tauriEmit('files-deleted', {
-          source: 'content',
-          fileIds: deletedFileIds,
-          fileCount: fileList.value.length,
-          selectedIndex: selectedItemIndex.value,
-        });
-        toast.success(
-          localeMsg.value.msgbox.trash_files.success.replace('{count}', ids.length.toLocaleString())
-        );
+        if (deletedFileIds.length > 0) {
+          await refreshAffectedAlbums(Array.from(affectedAlbumIds));
+          tauriEmit('files-deleted', {
+            source: 'content',
+            fileIds: deletedFileIds,
+            fileCount: fileList.value.length,
+            selectedIndex: selectedItemIndex.value,
+          });
+          toast.success(
+            localeMsg.value.msgbox.trash_files.success.replace('{count}', deletedFileIds.length.toLocaleString())
+          );
+        }
+        if (Number(result?.failedCount || 0) > 0 || deletedFileIds.length === 0) {
+          toast.error(localeMsg.value.msgbox.trash_files.error);
+        }
         return;
       }
       throw new Error('Failed to trash dedup files');
     }
     else if (selectMode.value && selectedCount.value > 0) {     // multi-select mode
       const selectedItems = getActionableSelectedItems();
-      selectedItems.forEach(item => affectedAlbumIds.add(Number(item.album_id || 0)));
-      deletedFileIds.push(...selectedItems.map(item => item.id));
-      const deletes = selectedItems
-        .map(async item => {
+      const deleteResults = await Promise.allSettled(
+        selectedItems.map(async item => {
           await deleteFileAlways(item);
-        });
-      await Promise.all(deletes); // parallelize DB updates
+          return item;
+        })
+      );
+      const deletedItems = deleteResults
+        .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+        .map(result => result.value);
+      failedDeleteCount = deleteResults.length - deletedItems.length;
+
+      if (failedDeleteCount > 0 && deletedItems.length === 0) {
+        throw new Error('Failed to trash selected files');
+      }
+
+      deletedItems.forEach(item => affectedAlbumIds.add(Number(item.album_id || 0)));
+      deletedFileIds.push(...deletedItems.map(item => item.id));
       fileList.value = fileList.value.filter((f) => !deletedFileIds.includes(f.id));
       totalFileCount.value = fileList.value.length;
       totalFileSize.value = fileList.value.reduce((total, file) => total + file.size, 0);
@@ -3844,6 +3863,10 @@ const onTrashFile = async () => {
       toast.success(
         localeMsg.value.msgbox.trash_files.success.replace('{count}', deletedFileIds.length.toLocaleString())
       );
+    }
+
+    if (failedDeleteCount > 0) {
+      toast.error(localeMsg.value.msgbox.trash_files.error);
     }
 
     closeTrashMsgbox();
@@ -3883,14 +3906,13 @@ const onTrashFile = async () => {
   }
 }
 
-// delete a file always (trash or delete from db)
+// Trash a file. Keep the DB row if the filesystem operation fails.
 async function deleteFileAlways(file: any) {
   const deletedFile = await deleteFile(file.id, file.file_path);
   if(deletedFile) {
     console.log('clickDeleteFile - trashed file:', file.file_path);
   } else {
-    console.log('clickDeleteFile - delete db file:', file.file_path);
-    await deleteDbFile(file.id);
+    throw new Error(`Failed to trash file: ${file.file_path}`);
   }
 }
 
