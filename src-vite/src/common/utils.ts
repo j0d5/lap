@@ -372,12 +372,15 @@ export function shouldUseBackendPreview(filePath = '', fileType = 0): boolean {
 }
 
 export function getThumbnailDataUrl(
-  thumb: { file_id?: number | null; error_code?: number | null } | null | undefined,
+  thumb: { file_id?: number | null; error_code?: number | null; thumb_data_base64?: string | null } | null | undefined,
   placeholder = '',
   bustCache = false
 ): string {
   if (!thumb || thumb.error_code !== 0 || !thumb.file_id) {
     return placeholder;
+  }
+  if (thumb.thumb_data_base64) {
+    return `data:image/jpeg;base64,${thumb.thumb_data_base64}`;
   }
   return getThumbUrl(thumb.file_id, bustCache) || placeholder;
 }
