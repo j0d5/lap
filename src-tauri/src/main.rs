@@ -230,6 +230,8 @@ async fn main() {
             t_cmds::delete_db_file,
             t_cmds::edit_file_comment,
             t_cmds::get_file_thumb,
+            t_cmds::get_file_thumb_by_id,
+            t_cmds::get_file_thumbs,
             t_cmds::get_file_info,
             t_cmds::update_file_info,
             t_cmds::add_file_to_db,

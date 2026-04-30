@@ -790,6 +790,27 @@ export async function getFileThumb(fileId, filePath, fileType, orientation, thum
   return null;
 }
 
+export async function getFileThumbById(fileId, thumbnailSize, forceRegenerate = false) {
+  try {
+    const result = await invoke('get_file_thumb_by_id', { fileId, thumbnailSize, forceRegenerate });
+    if (result) {
+      return result;
+    }
+  } catch (error) {
+    console.log('Failed to get file thumb by id:', error);
+  }
+  return null;
+}
+
+export async function getFileThumbs(files, thumbnailSize, forceRegenerate = false) {
+  try {
+    return await invoke('get_file_thumbs', { files, thumbnailSize, forceRegenerate });
+  } catch (error) {
+    console.log('Failed to get file thumbs:', error);
+  }
+  return [];
+}
+
 // get file info
 export async function getFileInfo(fileId) {
   try {

@@ -5,16 +5,17 @@
  * date:    2024-08-08
  */
 use crate::t_config::{self, AppConfig, Library, LibraryInfo, LibraryState};
-use crate::t_storage;
 use crate::t_face;
 use crate::t_image;
 use crate::t_sqlite::{
     ACamera, AFile, AFolder, ALens, ALocation, ATag, AThumb, ATimeLine, Album, ImageSearchParams,
     Person, QueryParams,
 };
+use crate::t_storage;
 use crate::t_utils;
 use crate::{t_ai, t_sqlite};
 
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::path::Path;
 use std::process::Command;
@@ -23,6 +24,16 @@ use tauri::State;
 
 // cancellation token for indexing
 pub struct IndexCancellation(pub Arc<Mutex<HashMap<i64, bool>>>);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThumbRequest {
+    pub file_id: i64,
+    pub file_path: Option<String>,
+    pub file_type: Option<i64>,
+    pub orientation: Option<i32>,
+    pub album_id: Option<i64>,
+}
 
 // build info
 include!(concat!(env!("OUT_DIR"), "/build_info.rs"));
@@ -611,9 +622,14 @@ pub async fn get_file_thumb(
     thumbnail_size: u32,
     force_regenerate: bool,
 ) -> Result<Option<AThumb>, String> {
-    if let Some(thumb) =
-        AThumb::get_thumb_if_available(file_id, file_path, thumbnail_size, orientation, force_regenerate)
-            .map_err(|e| format!("Error while getting thumbnail: {}", e))?
+    if let Some(thumb) = AThumb::get_thumb_if_available(
+        file_id,
+        file_path,
+        thumbnail_size,
+        orientation,
+        force_regenerate,
+    )
+    .map_err(|e| format!("Error while getting thumbnail: {}", e))?
     {
         return Ok(Some(thumb));
     }
@@ -635,6 +651,145 @@ pub async fn get_file_thumb(
     );
 
     Ok(None)
+}
+
+/// get a file's thumb image by id, if not exist, create a new one in background
+#[tauri::command]
+pub async fn get_file_thumb_by_id(
+    app_handle: tauri::AppHandle,
+    file_id: i64,
+    thumbnail_size: u32,
+    force_regenerate: bool,
+) -> Result<Option<AThumb>, String> {
+    let Some(file) = AFile::get_file_info(file_id)
+        .map_err(|e| format!("Error while getting file info for thumbnail: {}", e))?
+    else {
+        return Ok(None);
+    };
+
+    let Some(file_path) = file.file_path.clone() else {
+        return Ok(None);
+    };
+
+    let file_type = file.file_type.unwrap_or(0);
+    let orientation = file.e_orientation.unwrap_or(1) as i32;
+
+    if let Some(thumb) = AThumb::get_thumb_if_available(
+        file_id,
+        &file_path,
+        thumbnail_size,
+        orientation,
+        force_regenerate,
+    )
+    .map_err(|e| format!("Error while getting thumbnail: {}", e))?
+    {
+        return Ok(Some(thumb));
+    }
+
+    AThumb::schedule_background_generation_for_library(
+        app_handle,
+        file_id,
+        file_path,
+        file_type,
+        orientation,
+        thumbnail_size,
+        file.album_id.unwrap_or(0),
+        force_regenerate,
+    );
+
+    Ok(None)
+}
+
+/// get multiple thumbnails in one IPC call; missing thumbnails are generated in background
+#[tauri::command]
+pub async fn get_file_thumbs(
+    app_handle: tauri::AppHandle,
+    files: Vec<ThumbRequest>,
+    thumbnail_size: u32,
+    force_regenerate: bool,
+) -> Result<Vec<Option<AThumb>>, String> {
+    let mut thumbs = Vec::with_capacity(files.len());
+    let file_ids: Vec<i64> = files
+        .iter()
+        .map(|request| request.file_id)
+        .filter(|file_id| *file_id > 0)
+        .collect();
+    let mut fetched_thumbs = if force_regenerate {
+        HashMap::new()
+    } else {
+        AThumb::fetch_many(&file_ids)
+            .map_err(|e| format!("Error while fetching thumbnails: {}", e))?
+    };
+
+    for request in files {
+        if request.file_id <= 0 {
+            thumbs.push(None);
+            continue;
+        }
+
+        let mut file_path = request.file_path;
+        let mut file_type = request.file_type.unwrap_or(0);
+        let mut orientation = request.orientation.unwrap_or(1);
+        let mut album_id = request.album_id.unwrap_or(0);
+
+        if file_path.is_none()
+            || request.file_type.is_none()
+            || request.orientation.is_none()
+            || album_id <= 0
+        {
+            if let Some(file) = AFile::get_file_info(request.file_id)
+                .map_err(|e| format!("Error while getting file info for thumbnail: {}", e))?
+            {
+                if file_path.is_none() {
+                    file_path = file.file_path;
+                }
+                if request.file_type.is_none() {
+                    file_type = file.file_type.unwrap_or(0);
+                }
+                if request.orientation.is_none() {
+                    orientation = file.e_orientation.unwrap_or(1) as i32;
+                }
+                if album_id <= 0 {
+                    album_id = file.album_id.unwrap_or(0);
+                }
+            }
+        }
+
+        let Some(file_path) = file_path else {
+            thumbs.push(None);
+            continue;
+        };
+
+        if let Some(fetched_thumb) = fetched_thumbs.remove(&request.file_id) {
+            if let Some(thumb) = AThumb::resolve_fetched_thumb_if_available(
+                fetched_thumb,
+                &file_path,
+                thumbnail_size,
+                orientation,
+                force_regenerate,
+            )
+            .map_err(|e| format!("Error while getting thumbnail: {}", e))?
+            {
+                thumbs.push(Some(thumb));
+                continue;
+            }
+        }
+
+        AThumb::schedule_background_generation_for_library(
+            app_handle.clone(),
+            request.file_id,
+            file_path,
+            file_type,
+            orientation,
+            thumbnail_size,
+            album_id,
+            force_regenerate,
+        );
+
+        thumbs.push(None);
+    }
+
+    Ok(thumbs)
 }
 
 /// get a file's info

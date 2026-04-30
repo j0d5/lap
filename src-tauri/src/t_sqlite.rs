@@ -14,23 +14,30 @@ use crate::t_video;
 use base64::{Engine, engine::general_purpose};
 use exif::{In, Tag, Value};
 use image::{GenericImageView, ImageFormat};
-use rusqlite::{Connection, OptionalExtension, Result, ToSql, params};
+use rusqlite::{Connection, OptionalExtension, Result, ToSql, params, params_from_iter};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Cursor;
 use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
-use std::sync::{Mutex, OnceLock};
-use std::time::Duration;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::{Condvar, Mutex, OnceLock};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{Emitter, State};
 
-static THUMB_GENERATION_LOCKS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+static THUMB_GENERATION_LOCKS: OnceLock<ThumbGenerationLocks> = OnceLock::new();
 static THUMB_BACKGROUND_TASKS: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
 
-fn thumb_generation_locks() -> &'static Mutex<HashSet<String>> {
-    THUMB_GENERATION_LOCKS.get_or_init(|| Mutex::new(HashSet::new()))
+struct ThumbGenerationLocks {
+    active: Mutex<HashSet<String>>,
+    available: Condvar,
+}
+
+fn thumb_generation_locks() -> &'static ThumbGenerationLocks {
+    THUMB_GENERATION_LOCKS.get_or_init(|| ThumbGenerationLocks {
+        active: Mutex::new(HashSet::new()),
+        available: Condvar::new(),
+    })
 }
 
 fn thumb_background_tasks() -> &'static Mutex<HashSet<String>> {
@@ -50,9 +57,10 @@ struct ThumbGenerationGuard {
 
 impl Drop for ThumbGenerationGuard {
     fn drop(&mut self) {
-        if let Ok(mut locks) = thumb_generation_locks().lock() {
-            locks.remove(&self.key);
-        }
+        let locks = thumb_generation_locks();
+        let mut active = locks.active.lock().unwrap_or_else(|e| e.into_inner());
+        active.remove(&self.key);
+        locks.available.notify_all();
     }
 }
 
@@ -2365,14 +2373,19 @@ impl AThumb {
 
     fn acquire_generation_guard(file_id: i64, thumbnail_size: u32) -> ThumbGenerationGuard {
         let key = Self::generation_lock_key(file_id, thumbnail_size);
+        let locks = thumb_generation_locks();
+        let mut active = locks.active.lock().unwrap_or_else(|e| e.into_inner());
+
         loop {
-            if let Ok(mut locks) = thumb_generation_locks().lock() {
-                if !locks.contains(&key) {
-                    locks.insert(key.clone());
-                    return ThumbGenerationGuard { key };
-                }
+            if !active.contains(&key) {
+                active.insert(key.clone());
+                return ThumbGenerationGuard { key };
             }
-            std::thread::sleep(Duration::from_millis(15));
+
+            active = locks
+                .available
+                .wait(active)
+                .unwrap_or_else(|e| e.into_inner());
         }
     }
 
@@ -2707,6 +2720,54 @@ impl AThumb {
             .transpose()
     }
 
+    pub fn fetch_many(file_ids: &[i64]) -> Result<HashMap<i64, Self>, String> {
+        let library_id = Self::get_current_library_id();
+        Self::fetch_many_for_library(file_ids, &library_id)
+    }
+
+    pub fn fetch_many_for_library(
+        file_ids: &[i64],
+        library_id: &str,
+    ) -> Result<HashMap<i64, Self>, String> {
+        if file_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+
+        let placeholders = std::iter::repeat("?")
+            .take(file_ids.len())
+            .collect::<Vec<_>>()
+            .join(",");
+        let query = format!(
+            "SELECT id, file_id, error_code, thumb_data, thumb_key, thumb_mtime, thumb_size, updated_at
+            FROM athumbs WHERE file_id IN ({})",
+            placeholders
+        );
+        let conn = open_conn()?;
+        let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+        let rows = stmt
+            .query_map(params_from_iter(file_ids.iter()), |row| {
+                Ok(Self {
+                    id: Some(row.get(0)?),
+                    file_id: row.get(1)?,
+                    error_code: row.get(2)?,
+                    thumb_data: row.get(3)?,
+                    thumb_key: row.get(4)?,
+                    thumb_mtime: row.get(5)?,
+                    thumb_size: row.get(6)?,
+                    updated_at: row.get(7)?,
+                    thumb_data_base64: None,
+                })
+            })
+            .map_err(|e| e.to_string())?;
+
+        let mut thumbs = HashMap::with_capacity(file_ids.len());
+        for row in rows {
+            let thumb = Self::hydrate_output_bytes_for_library(row.map_err(|e| e.to_string())?, library_id)?;
+            thumbs.insert(thumb.file_id, thumb);
+        }
+        Ok(thumbs)
+    }
+
     fn is_stale(&self, file_path: &str, thumbnail_size: u32) -> bool {
         let current_mtime = Self::get_source_mtime(file_path);
         self.thumb_size != Some(thumbnail_size as i64) || self.thumb_mtime != current_mtime
@@ -2925,6 +2986,36 @@ impl AThumb {
             let _ = Self::delete(file_id);
         }
 
+        Ok(None)
+    }
+
+    pub fn resolve_fetched_thumb_if_available(
+        thumbnail: Self,
+        file_path: &str,
+        thumbnail_size: u32,
+        orientation: i32,
+        force_regenerate: bool,
+    ) -> Result<Option<Self>, String> {
+        if force_regenerate {
+            let _ = Self::delete(thumbnail.file_id);
+            return Ok(None);
+        }
+
+        if thumbnail.error_code == 1 || thumbnail.error_code == 2 {
+            return Ok(Some(thumbnail));
+        }
+
+        if thumbnail.is_stale(file_path, thumbnail_size) {
+            let _ = Self::delete(thumbnail.file_id);
+            return Ok(None);
+        }
+
+        let hydrated = Self::ensure_cached(thumbnail, file_path, thumbnail_size, orientation)?;
+        if hydrated.thumb_data.is_some() || hydrated.thumb_key.is_some() {
+            return Ok(Some(hydrated));
+        }
+
+        let _ = Self::delete(hydrated.file_id);
         Ok(None)
     }
 
