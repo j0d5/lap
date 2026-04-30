@@ -207,8 +207,14 @@ import { config, libConfig } from '@/common/config';
 import { listen } from '@tauri-apps/api/event';
 import { useUIStore } from '@/stores/uiStore';
 import MessageBox from '@/components/MessageBox.vue';
-import { getFileThumb, getFileInfo } from '@/common/api';
-import { getThumbUrl } from '@/common/utils';
+import { getFileInfo, getFileThumbById } from '@/common/api';
+import {
+  getThumbUrl,
+  getThumbnailDataUrl,
+  getThumbnailDataUrlInflight,
+  isWin,
+  setThumbnailDataUrlInflight,
+} from '@/common/utils';
 
 import { IconMore, IconTrash, IconSearch, IconDot, IconClose } from '@/common/icons';
 import ContextMenu from '@/components/ContextMenu.vue';
@@ -424,7 +430,18 @@ async function fetchThumbnailsForIds(ids: number[]) {
     }
 
     if (historyItems.value[fileId] && !thumbnails.value[fileId]) {
-      thumbnails.value[fileId] = getThumbUrl(fileId);
+      let thumbSrc = getThumbUrl(fileId, false, config.settings.thumbnailSize);
+      if (isWin && !thumbSrc.startsWith('data:')) {
+        const inflight = getThumbnailDataUrlInflight(fileId, config.settings.thumbnailSize);
+        const dataUrl = await (inflight || setThumbnailDataUrlInflight(
+          fileId,
+          config.settings.thumbnailSize,
+          getFileThumbById(fileId, config.settings.thumbnailSize, false)
+            .then(thumb => getThumbnailDataUrl(thumb, '', false, config.settings.thumbnailSize))
+        ));
+        thumbSrc = dataUrl || thumbSrc;
+      }
+      thumbnails.value[fileId] = thumbSrc;
     }
   }
 }

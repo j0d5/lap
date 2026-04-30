@@ -184,10 +184,18 @@ import { VueDraggable } from 'vue-draggable-plus'
 import { listen, emit as tauriEmit } from '@tauri-apps/api/event';
 import { config, libConfig } from '@/common/config';
 import { useUIStore } from '@/stores/uiStore';
-import { scrollToFolder, formatTimestamp, getThumbUrl } from '@/common/utils';
+import {
+  scrollToFolder,
+  formatTimestamp,
+  getThumbUrl,
+  getThumbnailDataUrl,
+  getThumbnailDataUrlInflight,
+  isWin,
+  setThumbnailDataUrlInflight,
+} from '@/common/utils';
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
 import { getAllAlbums, setDisplayOrder, addAlbum, editAlbum, removeAlbum, 
-         fetchFolder, expandFinalFolder, getFileThumb,
+         fetchFolder, expandFinalFolder, getFileThumbById,
          getAlbum, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
 import { Album, Folder } from '@/common/types';
 import { useAlbumSelectionProvider, SelectionSource } from '@/composables/useAlbumSelection';
@@ -346,7 +354,17 @@ const getMoreMenuItems = (album: any) => {
 // Load cover thumbnail for a single album
 const loadAlbumCover = async (albumId: number, coverFileId: number | null) => {
   if (coverFileId) {
-    const url = getThumbUrl(coverFileId);
+    let url = getThumbUrl(coverFileId, false, config.settings.thumbnailSize);
+    if (isWin && !url.startsWith('data:')) {
+      const inflight = getThumbnailDataUrlInflight(coverFileId, config.settings.thumbnailSize);
+      const dataUrl = await (inflight || setThumbnailDataUrlInflight(
+        coverFileId,
+        config.settings.thumbnailSize,
+        getFileThumbById(coverFileId, config.settings.thumbnailSize, false)
+          .then(thumb => getThumbnailDataUrl(thumb, '', false, config.settings.thumbnailSize))
+      ));
+      url = dataUrl || url;
+    }
     if (url) {
       albumCovers.value[albumId] = url;
     }

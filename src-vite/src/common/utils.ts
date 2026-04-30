@@ -324,13 +324,117 @@ export function formatFolderBreadcrumb(
 }
 
 let _thumbLibraryId = 'default';
+const THUMBNAIL_DATA_URL_CACHE_MAX_BYTES = 96 * 1024 * 1024;
+const thumbnailDataUrlCache = new Map<string, { dataUrl: string; bytes: number }>();
+const thumbnailDataUrlInflight = new Map<string, Promise<string>>();
+let thumbnailDataUrlCacheBytes = 0;
 
-export function setThumbLibraryId(id: string) {
-  _thumbLibraryId = id || 'default';
+function getThumbnailCacheKey(fileId: number, thumbnailSize = 0): string {
+  return `${_thumbLibraryId}:${thumbnailSize}:${fileId}`;
 }
 
-export function getThumbUrl(fileId: number | null | undefined, bustCache = false): string {
+function estimateDataUrlBytes(dataUrl: string): number {
+  return dataUrl.length * 2;
+}
+
+function touchThumbnailCacheEntry(key: string, dataUrl: string) {
+  const existing = thumbnailDataUrlCache.get(key);
+  if (existing) {
+    thumbnailDataUrlCacheBytes -= existing.bytes;
+    thumbnailDataUrlCache.delete(key);
+  }
+
+  const bytes = estimateDataUrlBytes(dataUrl);
+  thumbnailDataUrlCache.set(key, { dataUrl, bytes });
+  thumbnailDataUrlCacheBytes += bytes;
+
+  while (thumbnailDataUrlCacheBytes > THUMBNAIL_DATA_URL_CACHE_MAX_BYTES) {
+    const oldestKey = thumbnailDataUrlCache.keys().next().value;
+    if (!oldestKey) break;
+    const oldest = thumbnailDataUrlCache.get(oldestKey);
+    if (oldest) {
+      thumbnailDataUrlCacheBytes -= oldest.bytes;
+    }
+    thumbnailDataUrlCache.delete(oldestKey);
+  }
+}
+
+export function setThumbLibraryId(id: string) {
+  const nextId = id || 'default';
+  if (_thumbLibraryId !== nextId) {
+    thumbnailDataUrlCache.clear();
+    thumbnailDataUrlInflight.clear();
+    thumbnailDataUrlCacheBytes = 0;
+  }
+  _thumbLibraryId = nextId;
+}
+
+export function getCachedThumbnailDataUrl(
+  fileId: number | null | undefined,
+  thumbnailSize = 0
+): string {
   if (!fileId || fileId <= 0) return '';
+  const key = getThumbnailCacheKey(fileId, thumbnailSize);
+  const cached = thumbnailDataUrlCache.get(key);
+  if (!cached) return '';
+  touchThumbnailCacheEntry(key, cached.dataUrl);
+  return cached.dataUrl;
+}
+
+export function setCachedThumbnailDataUrl(
+  fileId: number | null | undefined,
+  dataUrl: string,
+  thumbnailSize = 0
+) {
+  if (!fileId || fileId <= 0 || !dataUrl.startsWith('data:image/')) return;
+  touchThumbnailCacheEntry(getThumbnailCacheKey(fileId, thumbnailSize), dataUrl);
+}
+
+export function clearCachedThumbnailDataUrl(fileId: number | null | undefined, thumbnailSize = 0) {
+  if (!fileId || fileId <= 0) return;
+  const key = getThumbnailCacheKey(fileId, thumbnailSize);
+  const existing = thumbnailDataUrlCache.get(key);
+  if (existing) {
+    thumbnailDataUrlCacheBytes -= existing.bytes;
+  }
+  thumbnailDataUrlCache.delete(key);
+  thumbnailDataUrlInflight.delete(key);
+}
+
+export function getThumbnailDataUrlInflight(
+  fileId: number | null | undefined,
+  thumbnailSize = 0
+): Promise<string> | undefined {
+  if (!fileId || fileId <= 0) return undefined;
+  return thumbnailDataUrlInflight.get(getThumbnailCacheKey(fileId, thumbnailSize));
+}
+
+export function setThumbnailDataUrlInflight(
+  fileId: number | null | undefined,
+  thumbnailSize: number,
+  promise: Promise<string>
+): Promise<string> {
+  if (!fileId || fileId <= 0) return promise;
+  const key = getThumbnailCacheKey(fileId, thumbnailSize);
+  thumbnailDataUrlInflight.set(key, promise);
+  promise.finally(() => {
+    if (thumbnailDataUrlInflight.get(key) === promise) {
+      thumbnailDataUrlInflight.delete(key);
+    }
+  });
+  return promise;
+}
+
+export function getThumbUrl(
+  fileId: number | null | undefined,
+  bustCache = false,
+  thumbnailSize = 0
+): string {
+  if (!fileId || fileId <= 0) return '';
+  if (isWin && !bustCache) {
+    const cached = getCachedThumbnailDataUrl(fileId, thumbnailSize);
+    if (cached) return cached;
+  }
   const scheme = isWin ? 'http://thumb.localhost' : 'thumb://localhost';
   const base = `${scheme}/${_thumbLibraryId}/${fileId}`;
   return bustCache ? `${base}?t=${Date.now()}` : base;
@@ -374,15 +478,18 @@ export function shouldUseBackendPreview(filePath = '', fileType = 0): boolean {
 export function getThumbnailDataUrl(
   thumb: { file_id?: number | null; error_code?: number | null; thumb_data_base64?: string | null } | null | undefined,
   placeholder = '',
-  bustCache = false
+  bustCache = false,
+  thumbnailSize = 0
 ): string {
   if (!thumb || thumb.error_code !== 0 || !thumb.file_id) {
     return placeholder;
   }
   if (thumb.thumb_data_base64) {
-    return `data:image/jpeg;base64,${thumb.thumb_data_base64}`;
+    const dataUrl = `data:image/jpeg;base64,${thumb.thumb_data_base64}`;
+    setCachedThumbnailDataUrl(thumb.file_id, dataUrl, thumbnailSize);
+    return dataUrl;
   }
-  return getThumbUrl(thumb.file_id, bustCache) || placeholder;
+  return getThumbUrl(thumb.file_id, bustCache, thumbnailSize) || placeholder;
 }
 
 export function getRelativePath(path: string, basePath: string): string {

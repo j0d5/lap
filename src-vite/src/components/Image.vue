@@ -151,7 +151,7 @@
         @dblclick.stop="toggleZoomFit"
       >
         <!-- nav image -->
-        <img :src="thumbnailSrc || imageSrc[activeImage]" :style="navImageStyle" draggable="false" />
+        <img :src="displayThumbnailSrc || imageSrc[activeImage]" :style="navImageStyle" draggable="false" />
         <!-- nav box -->
         <div class="absolute top-0 left-0 border-2 border-primary cursor-move"
           :style="navBoxStyle"
@@ -174,8 +174,17 @@
 import { ref, shallowRef, triggerRef, watch, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
-import { getAssetSrc, getPreviewUrl, shouldUseBackendPreview, getThumbUrl } from '@/common/utils';
-import { getFacesForFile } from '@/common/api';
+import {
+  getAssetSrc,
+  getPreviewUrl,
+  shouldUseBackendPreview,
+  getThumbUrl,
+  getThumbnailDataUrl,
+  getThumbnailDataUrlInflight,
+  isWin,
+  setThumbnailDataUrlInflight,
+} from '@/common/utils';
+import { getFacesForFile, getFileThumbById } from '@/common/api';
 import { RawFace, Face } from '@/common/types';
 
 import { IconError } from '@/common/icons';
@@ -343,6 +352,8 @@ let resizeObserver: ResizeObserver | null = null;
 const suppressViewportEmit = ref(false);
 let warmImageTimeout: NodeJS.Timeout | null = null;
 let warmImageIdleId: number | null = null;
+const resolvedThumbnailSrc = ref('');
+const displayThumbnailSrc = computed(() => props.thumbnailSrc || resolvedThumbnailSrc.value);
 
 function waitForNextPaint() {
   return new Promise<void>((resolve) => {
@@ -352,8 +363,33 @@ function waitForNextPaint() {
 
 // inline loading for formats that require backend preview decoding
 const showInlineLoading = computed(() =>
-  shouldUseBackendPreview(props.filePath, Number(props.fileType || 0)) && !!props.thumbnailSrc
+  shouldUseBackendPreview(props.filePath, Number(props.fileType || 0)) && !!displayThumbnailSrc.value
 );
+
+async function getEffectiveThumbnailSrc() {
+  if (props.thumbnailSrc) return props.thumbnailSrc;
+  const fileId = props.fileId;
+  if (!fileId) return '';
+  const thumbUrl = getThumbUrl(fileId, false, config.settings.thumbnailSize);
+  if (!isWin) return thumbUrl;
+  if (thumbUrl.startsWith('data:')) {
+    resolvedThumbnailSrc.value = thumbUrl;
+    return thumbUrl;
+  }
+  if (resolvedThumbnailSrc.value) return resolvedThumbnailSrc.value;
+
+  const inflight = getThumbnailDataUrlInflight(fileId, config.settings.thumbnailSize);
+  const dataUrl = await (inflight || setThumbnailDataUrlInflight(
+    fileId,
+    config.settings.thumbnailSize,
+    getFileThumbById(fileId, config.settings.thumbnailSize, false)
+      .then(thumb => getThumbnailDataUrl(thumb, '', false, config.settings.thumbnailSize))
+  ));
+  if (props.fileId === fileId && !props.thumbnailSrc && dataUrl) {
+    resolvedThumbnailSrc.value = dataUrl;
+  }
+  return props.fileId === fileId ? dataUrl || thumbUrl : '';
+}
 
 // navigator view mode
 const navContainerSize = computed(() => {
@@ -1130,7 +1166,7 @@ watch(() => props.filePath, async (newFilePath) => {
   }, 500);
 
   const usesBackendPreview = shouldUseBackendPreview(newFilePath, Number(props.fileType || 0));
-  const effectiveThumbSrc = props.thumbnailSrc || getThumbUrl(props.fileId);
+  const effectiveThumbSrc = await getEffectiveThumbnailSrc();
   const hasPreviewPlaceholder = usesBackendPreview && !!effectiveThumbSrc;
 
   if (hasPreviewPlaceholder) {
@@ -1217,8 +1253,12 @@ watch(() => props.filePath, async (newFilePath) => {
   }
 }, { immediate: true });
 
-// watch thumbnailSrc changes to update placeholder if original is still loading
-watch(() => props.thumbnailSrc, async (newThumbSrc) => {
+watch(() => props.fileId, () => {
+  resolvedThumbnailSrc.value = '';
+});
+
+// watch thumbnail source changes to update placeholder if original is still loading
+watch(displayThumbnailSrc, async (newThumbSrc) => {
   if (!newThumbSrc) return;
   const currentFilePath = props.filePath;
   if (!currentFilePath) return;

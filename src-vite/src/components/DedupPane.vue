@@ -401,7 +401,7 @@ async function hydrateGroupThumbnails(groups: any[]) {
           config.settings.thumbnailSize,
           false
         );
-        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder);
+        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize);
       })());
     }
   }
