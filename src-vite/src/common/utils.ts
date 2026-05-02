@@ -479,9 +479,17 @@ export function getThumbnailDataUrl(
   thumb: { file_id?: number | null; error_code?: number | null; thumb_data_base64?: string | null } | null | undefined,
   placeholder = '',
   bustCache = false,
-  thumbnailSize = 0
+  thumbnailSize = 0,
+  filePath?: string | null
 ): string {
-  if (!thumb || thumb.error_code !== 0 || !thumb.file_id) {
+  if (!thumb || thumb.file_id == null || thumb.file_id <= 0) {
+    return placeholder;
+  }
+  if (thumb.error_code === 2) {
+    if (filePath) return getAssetSrc(filePath);
+    return getThumbUrl(thumb.file_id, bustCache, thumbnailSize) || placeholder;
+  }
+  if (thumb.error_code !== 0) {
     return placeholder;
   }
   if (thumb.thumb_data_base64) {

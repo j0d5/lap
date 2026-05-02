@@ -3996,10 +3996,8 @@ const updateThumbForFile = async (file: any) => {
   clearCachedThumbnailDataUrl(file.id, config.settings.thumbnailSize);
   const thumb = await getFileThumb(file.id, file.file_path, file.file_type, file.e_orientation || 0, config.settings.thumbnailSize, true);
   if (thumb) {
-    if (thumb.error_code === 0) {
-      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, true, config.settings.thumbnailSize);
-    } else if (thumb.error_code === 2) {
-      file.thumbnail = getAssetSrc(file.file_path);
+    if (thumb.error_code === 0 || thumb.error_code === 2) {
+      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, true, config.settings.thumbnailSize, file.file_path);
     } else if (thumb.error_code === 1) {
       file.thumbnail = thumbnailPlaceholder;
     }
@@ -4593,10 +4591,8 @@ async function getFileListThumb(files: any[], offset = 0, concurrencyLimit = 4, 
   const applyThumbToFile = (file: any, thumb: any) => {
     if (!thumb) return;
 
-    if (thumb.error_code === 0) {
-      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, bustCache, thumbnailSize);
-    } else if (thumb.error_code === 2) {
-      file.thumbnail = getAssetSrc(file.file_path);
+    if (thumb.error_code === 0 || thumb.error_code === 2) {
+      file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, bustCache, thumbnailSize, file.file_path);
     } else if (thumb.error_code === 1) {
       file.thumbnail = thumbnailPlaceholder;
     }

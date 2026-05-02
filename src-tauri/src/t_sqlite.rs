@@ -3121,9 +3121,22 @@ impl AThumb {
         file_id: i64,
         library_id: &str,
     ) -> Result<Option<Vec<u8>>, String> {
-        if let Some(thumb) =
-            Self::fetch_for_library(file_id, library_id)?.filter(|thumb| thumb.error_code == 0)
-        {
+        let thumb = Self::fetch_for_library(file_id, library_id)?;
+
+        // error_code 2: image is small enough to use the original file directly
+        if let Some(ref thumb) = thumb {
+            if thumb.error_code == 2 {
+                if let Ok(Some(file)) = AFile::get_file_info(file_id) {
+                    if let Some(ref file_path) = file.file_path {
+                        if let Ok(data) = std::fs::read(file_path) {
+                            return Ok(Some(data));
+                        }
+                    }
+                }
+            }
+        }
+
+        if let Some(thumb) = thumb.filter(|t| t.error_code == 0) {
             if let Some(data) = thumb.thumb_data {
                 return Ok(Some(data));
             }

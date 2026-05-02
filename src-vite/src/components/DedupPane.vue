@@ -67,7 +67,12 @@
               </div>
               <span class="text-xs font-semibold text-base-content/70 truncate">{{ $t('info_panel.dedup.group_label', { index: idx + 1 }) }}</span>
               <span class="text-[11px] text-base-content/50 shrink-0">{{ group.file_count }} {{ $t('info_panel.dedup.items') }}</span>
-              <span class="ml-auto text-[11px] text-base-content/55">{{ formatFileSize(group.reclaimableBytes) }}</span>
+              <div class="ml-auto text-right shrink-0">
+                <div class="text-[11px] text-base-content/55">{{ formatFileSize(group.reclaimableBytes) }}</div>
+                <div v-if="group.keepItem?.file?.width && group.keepItem?.file?.height" class="text-[11px] text-base-content/40">
+                  {{ group.keepItem.file.width }} x {{ group.keepItem.file.height }}
+                </div>
+              </div>
             </button>
           </div>
         </div>
@@ -127,11 +132,8 @@
                   >
                     {{ formatDedupFolderPath(activeGroup.keepItem.file) }}
                   </div>
-                  <div class="text-[11px] text-base-content/45">
-                    {{ formatFileSize(activeGroup.keepItem.file?.size || 0) }}
-                    <template v-if="activeGroup.keepItem.file?.width && activeGroup.keepItem.file?.height">
-                      · {{ activeGroup.keepItem.file.width }} x {{ activeGroup.keepItem.file.height }}
-                    </template>
+                  <div v-if="activeGroup.keepItem.file?.created_at" class="text-[11px] text-base-content/45">
+                    {{ formatTimestamp(activeGroup.keepItem.file.created_at, $t('format.date_time')) }}
                   </div>
                 </div>
               </div>
@@ -178,9 +180,8 @@
                   >
                     {{ formatDedupFolderPath(item.file) }}
                   </div>
-                  <div class="text-[11px] text-base-content/45">
-                    {{ formatFileSize(item.file?.size || 0) }}
-                    <template v-if="item.file?.width && item.file?.height"> · {{ item.file.width }} x {{ item.file.height }}</template>
+                  <div v-if="item.file?.created_at" class="text-[11px] text-base-content/45">
+                    {{ formatTimestamp(item.file.created_at, $t('format.date_time')) }}
                   </div>
                 </div>
                 <button class="btn btn-xs btn-ghost shrink-0" @click.stop="setKeep(activeGroup.id, item.file_id)">
@@ -197,7 +198,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-import { formatFileSize, getFolderName, getFolderPath, formatFolderBreadcrumb, getThumbnailDataUrl, isMac } from '@/common/utils';
+import { formatFileSize, getFolderName, getFolderPath, formatFolderBreadcrumb, getThumbnailDataUrl, isMac, formatTimestamp } from '@/common/utils';
 import TButton from '@/components/TButton.vue';
 import { IconCheckAll, IconCheckNone, IconClose, IconLock, IconSimilar, IconSplitOn, IconTrash, IconRefresh } from '@/common/icons';
 import { dedupStartScan, dedupGetScanStatus, dedupGetOverview, listenDedupScanProgress, dedupListGroups, dedupSetKeep, getAlbum, getFileThumb } from '@/common/api';
@@ -401,7 +402,7 @@ async function hydrateGroupThumbnails(groups: any[]) {
           config.settings.thumbnailSize,
           false
         );
-        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize);
+        file.thumbnail = getThumbnailDataUrl(thumb, thumbnailPlaceholder, false, config.settings.thumbnailSize, file.file_path);
       })());
     }
   }
@@ -433,6 +434,22 @@ async function fetchGroups(preferredGroupId: number | null = null) {
     for (const key of Array.from(selectedDupIdsByGroup.value.keys())) {
       if (!available.has(key)) {
         selectedDupIdsByGroup.value.delete(key);
+      }
+    }
+
+    // Default-select all duplicate (non-keep) items for newly loaded groups
+    for (const group of rawGroups.value) {
+      const groupId = Number(group.id);
+      if (!selectedDupIdsByGroup.value.has(groupId)) {
+        const set = new Set<number>();
+        for (const item of (group.items || [])) {
+          if (item.is_keep !== 1) {
+            set.add(Number(item.file_id));
+          }
+        }
+        if (set.size > 0) {
+          selectedDupIdsByGroup.value.set(groupId, set);
+        }
       }
     }
 
