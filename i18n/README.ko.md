@@ -27,8 +27,9 @@ Lap은 오픈 소스 기반의 '로컬 우선(local-first)' 사진 관리 도구
 | :-- | :-- | :-- |
 | **macOS (Apple Silicon)** | `aarch64.dmg` | Apple 공증 완료 |
 | **macOS (Intel)** | `x64.dmg` | Apple 공증 완료 |
-| **Windows 10/11 (x64)** | `.msi` | Windows 11에서 테스트 완료. 현재 서명되지 않음 (SmartScreen 경고가 나타날 수 있음) |
-| **Ubuntu/Debian (amd64)** | `amd64.deb` | Linux Mint에서 테스트 완료. 비디오 재생 지원에 대해서는 아래 Linux 참고 사항을 확인하세요. |
+| **Windows 10/11 (x64)** | `_x64_en-US.msi` | 현재 서명되지 않음 (SmartScreen 경고가 나타날 수 있음) |
+| **Windows 10/11 (ARM64)** | `_arm64_en-US.msi` | 현재 서명되지 않음 (SmartScreen 경고가 나타날 수 있음) |
+| **Ubuntu/Debian (amd64)** | `_amd64.deb` | 비디오 재생 지원에 대해서는 아래 Linux 참고 사항을 확인하세요. |
 
 ### Linux 비디오 재생 참고 사항
 
@@ -66,7 +67,7 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 - **즉석 편집**: 자르기, 회전, 뒤집기, 크기 조절 및 기본 보정 기능을 제공합니다.
 - **폴더 동기화**: 파일 시스템 감지 기반의 동기화 및 수동 새로고침을 지원합니다.
 - **로컬 AI 검색 도구**: 텍스트/이미지 검색, 유사 이미지 검색, 얼굴 클러스터링, 스마트 태그 기능을 사용할 수 있습니다.
-- **현대적 이미지 포맷 지원**: WebP, HEIC/HEIF, AVIF 및 JXL (JPEG XL) 형식을 지원합니다.
+- **현대적 이미지 포맷 지원**: WebP, HEIC/HEIF/HIF, AVIF 및 JXL (JPEG XL) 형식을 지원합니다.
 - **RAW 사진 보기**: 20개 이상의 카메라 제조사 RAW 포맷(CR2, NEF, ARW, DNG 등)에 대한 내장 디코딩을 지원합니다.
 - **광범위한 비디오 호환성**: MP4, MOV, AVI, MKV 및 20개 이상의 다양한 형식을 지원하며 교차 플랫폼 최적화를 제공합니다.
 
@@ -105,7 +106,7 @@ cargo tauri dev
 
 | 유형 | 포맷 목록 |
 | :--- | :--- |
-| 이미지 | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF, AVIF, JXL |
+| 이미지 | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF/HIF, AVIF, JXL |
 | RAW 사진 | CR2, CR3, CRW, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, DNG, SRW, RWL, MRW, 3FR, MOS, DCR, KDC, ERF, MEF, RAW, MDC |
 | 비디오 | MP4, MOV, M4V, MKV, AVI, FLV, TS/M2TS, WMV, WebM, 3GP/3G2, F4V, VOB, MPG/MPEG, ASF, DIVX 등. H.264 재생은 모든 플랫폼에서 지원되며, 네이티브 재생이 불가한 경우 자동으로 호환성 처리가 진행됩니다. HEVC/H.265 및 VP9은 macOS에서 네이티브 지원됩니다. |
 
@@ -120,6 +121,7 @@ cargo tauri dev
 | 라이브러리 | 용도 |
 | :-- | :-- |
 | [LibRaw](https://github.com/LibRaw/LibRaw) | RAW 이미지 디코딩 및 썸네일 추출 |
+| [libheif](https://github.com/strukturag/libheif) | HEIC/HEIF/HIF 이미지 디코딩 및 미리보기 생성 |
 | [FFmpeg](https://ffmpeg.org/) | 비디오 처리 및 썸네일 생성 |
 | [ONNX Runtime](https://onnxruntime.ai/) | 로컬 AI 모델 추론 엔진 |
 | [CLIP](https://github.com/openai/CLIP) | 이미지-텍스트 유사도 검색 |

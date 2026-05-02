@@ -27,8 +27,9 @@ Es ist eine datenschutzorientierte Alternative zu Cloud-Fotodiensten: kein erzwu
 | :-- | :-- | :-- |
 | **macOS (Apple Silicon)** | `aarch64.dmg` | Von Apple notarisiert |
 | **macOS (Intel)** | `x64.dmg` | Von Apple notarisiert |
-| **Windows 10/11 (x64)** | `.msi` | Unter Windows 11 getestet. Derzeit nicht signiert (SmartScreen-Warnung kann erscheinen) |
-| **Ubuntu/Debian (amd64)** | `amd64.deb` | Unter Linux Mint getestet. Für bessere Video-Unterstützung siehe die Linux-Hinweise unten. |
+| **Windows 10/11 (x64)** | `_x64_en-US.msi` | Derzeit nicht signiert (SmartScreen-Warnung kann erscheinen) |
+| **Windows 10/11 (ARM64)** | `_arm64_en-US.msi` | Derzeit nicht signiert (SmartScreen-Warnung kann erscheinen) |
+| **Ubuntu/Debian (amd64)** | `_amd64.deb` | Für bessere Video-Unterstützung siehe die Linux-Hinweise unten. |
 
 ### Linux Video-Wiedergabe Hinweise
 
@@ -66,7 +67,7 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 - **Direkt bearbeiten** mit Zuschneiden, Drehen, Spiegeln, Skalieren und grundlegenden Anpassungen.
 - **Ordner synchron halten** mit dateisystembasierten Operationen und Aktualisierungsunterstützung.
 - **Lokale KI-Werkzeuge nutzen** wie Text-/Bildsuche, Suche nach ähnlichen Bildern, Gesichts-Clustering und intelligente Schlagworte.
-- **Moderne Bildformate öffnen** einschließlich WebP, HEIC/HEIF, AVIF and JXL (JPEG XL).
+- **Moderne Bildformate öffnen** einschließlich WebP, HEIC/HEIF/HIF, AVIF and JXL (JPEG XL).
 - **RAW-Fotos anzeigen** mit integrierter Dekodierung für über 20 Kamera-RAW-Formate (CR2, NEF, ARW, DNG usw.).
 - **Breite Videokompatibilität**: Unterstützung für MP4, MOV, AVI, MKV und über 20 weitere Formate mit plattformübergreifender Optimierung.
 
@@ -105,7 +106,7 @@ cargo tauri dev
 
 | Typ | Formate |
 | :--- | :--- |
-| Bilder | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF, AVIF, JXL |
+| Bilder | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF/HIF, AVIF, JXL |
 | RAW-Fotos | CR2, CR3, CRW, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, DNG, SRW, RWL, MRW, 3FR, MOS, DCR, KDC, ERF, MEF, RAW, MDC |
 | Videos | MP4, MOV, M4V, MKV, AVI, FLV, TS/M2TS, WMV, WebM, 3GP/3G2, F4V, VOB, MPG/MPEG, ASF, DIVX und weitere. Die H.264-Wiedergabe wird auf allen Plattformen unterstützt, mit automatischer Kompatibilitätsverarbeitung, wenn die native Wiedergabe nicht verfügbar ist. HEVC/H.265 und VP9 werden nativ auf macOS unterstützt. |
 
@@ -120,6 +121,7 @@ cargo tauri dev
 | Bibliothek | Zweck |
 | :-- | :-- |
 | [LibRaw](https://github.com/LibRaw/LibRaw) | RAW-Bilddekodierung und Thumbnail-Extraktion |
+| [libheif](https://github.com/strukturag/libheif) | HEIC/HEIF/HIF-Bilddekodierung und Vorschaugenerierung |
 | [FFmpeg](https://ffmpeg.org/) | Videoverarbeitung und Thumbnail-Generierung |
 | [ONNX Runtime](https://onnxruntime.ai/) | Lokale KI-Modell-Inferenz-Engine |
 | [CLIP](https://github.com/openai/CLIP) | Bild-Text-Ähnlichkeitssuche |

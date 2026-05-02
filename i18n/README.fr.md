@@ -27,8 +27,9 @@ Ouvrez la [page des dernières versions](https://github.com/julyx10/lap/releases
 | :-- | :-- | :-- |
 | **macOS (Apple Silicon)** | `aarch64.dmg` | Notarié par Apple |
 | **macOS (Intel)** | `x64.dmg` | Notarié par Apple |
-| **Windows 10/11 (x64)** | `.msi` | Testé sur Windows 11. Actuellement non signé (un avertissement SmartScreen peut apparaître) |
-| **Ubuntu/Debian (amd64)** | `amd64.deb` | Testé sur Linux Mint. Pour un meilleur support de la lecture vidéo, voir la note Linux ci-dessous. |
+| **Windows 10/11 (x64)** | `_x64_en-US.msi` | Actuellement non signé (un avertissement SmartScreen peut apparaître) |
+| **Windows 10/11 (ARM64)** | `_arm64_en-US.msi` | Actuellement non signé (un avertissement SmartScreen peut apparaître) |
+| **Ubuntu/Debian (amd64)** | `_amd64.deb` | Pour un meilleur support de la lecture vidéo, voir la note Linux ci-dessous. |
 
 ### Note sur la lecture vidéo sous Linux
 
@@ -66,7 +67,7 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 - **Édition sur place** avec recadrage, rotation, retournement, redimensionnement et ajustements de base.
 - **Garder les dossiers synchronisés** avec des opérations sensibles au système de fichiers et un support de rafraîchissement.
 - **Utiliser les outils de recherche locaux** tels que la recherche texte/image, la recherche d'images similaires, le regroupement de visages et les tags intelligents.
-- **Ouvrir les formats d'image modernes** y compris WebP, HEIC/HEIF, AVIF et JXL (JPEG XL).
+- **Ouvrir les formats d'image modernes** y compris WebP, HEIC/HEIF/HIF, AVIF et JXL (JPEG XL).
 - **Consulter les photos RAW** avec un décodage intégré pour plus de 20 formats RAW d'appareils photo (CR2, NEF, ARW, DNG, etc.).
 - **Large compatibilité vidéo** : prise en charge des formats MP4, MOV, AVI, MKV et de plus de 20 autres formats avec optimisation multiplateforme.
 
@@ -105,7 +106,7 @@ cargo tauri dev
 
 | Type | Formats |
 | :--- | :--- |
-| Images | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF, AVIF, JXL |
+| Images | JPG/JPEG, PNG, GIF, BMP, TIFF, WebP, HEIC/HEIF/HIF, AVIF, JXL |
 | Photos RAW | CR2, CR3, CRW, NEF, NRW, ARW, SRF, SR2, RAF, RW2, ORF, PEF, DNG, SRW, RWL, MRW, 3FR, MOS, DCR, KDC, ERF, MEF, RAW, MDC |
 | Vidéos | MP4, MOV, M4V, MKV, AVI, FLV, TS/M2TS, WMV, WebM, 3GP/3G2, F4V, VOB, MPG/MPEG, ASF, DIVX et plus. La lecture H.264 est supportée sur toutes les plateformes, avec un traitement automatique de compatibilité lorsque la lecture native n'est pas disponible. HEVC/H.265 et VP9 sont supportés nativement sur macOS. |
 
@@ -120,6 +121,7 @@ cargo tauri dev
 | Bibliothèque | Usage |
 | :-- | :-- |
 | [LibRaw](https://github.com/LibRaw/LibRaw) | Décodage d'images RAW et extraction de miniatures |
+| [libheif](https://github.com/strukturag/libheif) | Décodage d'images HEIC/HEIF/HIF et génération d'aperçus |
 | [FFmpeg](https://ffmpeg.org/) | Traitement vidéo et génération de miniatures |
 | [ONNX Runtime](https://onnxruntime.ai/) | Moteur d'inférence de modèles d'IA local |
 | [CLIP](https://github.com/openai/CLIP) | Recherche de similitude image-texte |
