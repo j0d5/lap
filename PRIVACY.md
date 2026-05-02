@@ -1,10 +1,10 @@
 # Privacy
 
-Last updated: March 28, 2026
+Last updated: May 2, 2026
 
 ## Overview
 
-Lap is designed as a local photo manager. Your photo library is processed on your device, and your files remain under your control.
+Lap is designed as a local-first photo manager. Your photo library is processed on your device, and your files remain under your control.
 
 This document explains what data Lap accesses, what data Lap does not collect by default, and when network access may occur.
 
@@ -14,9 +14,9 @@ Lap may access the following data on your device in order to provide its feature
 
 - Photos, videos, and folders that you choose to add to a library
 - File metadata such as filenames, paths, timestamps, size, format, EXIF data, ratings, tags, comments, and rotation state
-- Generated local app data such as thumbnails, indexes, search data, embeddings, clustering data, and other library-related cache or database records
+- Generated local app data such as thumbnails, previews, indexes, search data, embeddings, face clustering data, video indexing data, and other library-related cache or database records
 
-Lap uses this data to support browsing, search, deduplication, tagging, ratings, face clustering, and other library management features.
+Lap uses this data to support browsing, search, deduplication, tagging, ratings, file type filtering, video support, face clustering, and other library management features.
 
 ## Local Processing
 
@@ -25,8 +25,10 @@ Lap is intended to process your library locally on your device.
 By default:
 
 - Your photos and videos are not uploaded to a Lap cloud service
+- AI search, smart tags, face detection, face clustering, thumbnail generation, RAW previews, and video indexing are processed locally
 - Lap does not include advertising trackers
-- Lap does not send telemetry or analytics about your library usage
+- Lap does not track daily active usage, session counts, or feature usage patterns
+- The frontend does not record user behavior, clicks, or navigation events
 
 ## Network Access
 
@@ -35,30 +37,31 @@ Lap may access the network in limited cases where the feature requires it. Based
 - Checking for application updates
 - Downloading application updates from GitHub releases when you choose to install an update
 - Opening external links such as the project website or GitHub repository in your browser
-
-If anonymous usage statistics is enabled, Lap may also send a very small set of anonymous product events through Aptabase, as described below.
-
-If a future feature requires additional network access, it should be documented in the release notes and relevant product documentation.
+- Fetching map tiles from OpenStreetMap tile servers when viewing a photo's GPS location on the map
 
 ## Anonymous Usage Statistics
 
-Lap can send anonymous usage statistics to help improve Lap's stability and user experience. This feature is controlled by the `Share anonymous usage statistics` toggle in `Settings > Privacy`.
+Lap includes Aptabase, a privacy-first analytics service, in its backend. It is enabled by default in release builds to help the maintainer understand basic adoption and stability.
 
-Lap uses Aptabase, a privacy-first analytics service for apps. Events are anonymous and do not include your photos, file paths, or personal identifiers.
+Aptabase runs only on the Rust backend. The frontend does not record or send any user behavior events — no clicks, no navigation tracking, no feature usage analytics.
 
-When enabled, Lap sends only:
+When enabled, Lap sends exactly two app-lifecycle events:
 
-- Anonymous app activity counters
-- Lap version
-- Device platform and operating system
-- A coarse region inferred by the analytics service from network metadata
+- App started
+- App exited
+
+Each event carries only the Lap version, device platform, and operating system. No coarse region or IP-derived location is stored or surfaced by the analytics service.
+
+These events are strictly anonymous. They contain no user identifiers, session IDs, or device fingerprints. Aptabase does not use cookies or tracking pixels, and events are not correlated across sessions.
+
+**Lap does not and will never send** your photos, videos, folder paths, filenames, search queries, tags, ratings, comments, EXIF data, embeddings, face clusters, thumbnails, previews, database contents, or any other library data.
 
 ## Data Storage
 
 Lap stores application data locally on your device. This may include:
 
 - App settings
-- Local database including generated thumbnails and related indexing data
+- Local databases for library records, generated thumbnails and previews, search indexes, embeddings, face clustering data, video indexing data, tags, ratings, comments, and related cache data
 
 This local data is used to provide the app's functionality and improve performance on your device.
 
