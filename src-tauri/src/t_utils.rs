@@ -288,9 +288,8 @@ impl FileNode {
 
         match sort {
             1 => nodes.sort_by(|a, b| {
-                natural_sort_key(&b.name)
-                    .to_lowercase()
-                    .cmp(&natural_sort_key(&a.name).to_lowercase())
+                natural_sort_key(&b.name.to_lowercase())
+                    .cmp(&natural_sort_key(&a.name.to_lowercase()))
             }),
             2 => nodes.sort_by(|a, b| {
                 a.modified_at
@@ -305,9 +304,8 @@ impl FileNode {
                     .cmp(&a.modified_at.or(a.created_at).unwrap_or(0))
             }),
             _ => nodes.sort_by(|a, b| {
-                natural_sort_key(&a.name)
-                    .to_lowercase()
-                    .cmp(&natural_sort_key(&b.name).to_lowercase())
+                natural_sort_key(&a.name.to_lowercase())
+                    .cmp(&natural_sort_key(&b.name.to_lowercase()))
             }),
         }
         Ok(nodes)
@@ -1166,8 +1164,8 @@ pub fn get_file_path(path: &str, name: &str) -> String {
     file_path.to_string_lossy().to_string() // Convert PathBuf to String
 }
 
-/// Convert to pinyin and zero-pad digit sequences for natural sort order.
-/// "Page_10" becomes "Page_0000000010", so Page_2 < Page_10.
+/// Convert to pinyin and zero-pad ALL digit sequences for natural sort order.
+/// Every group of digits is padded to 10 digits so "Page_2" < "Page_10".
 pub fn natural_sort_key(s: &str) -> String {
     use std::fmt::Write;
 

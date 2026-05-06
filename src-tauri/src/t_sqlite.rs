@@ -915,7 +915,7 @@ impl AFile {
             folder_id,
 
             name: file_info.file_name.clone(),
-            name_pinyin: Some(t_utils::natural_sort_key(file_info.file_name.as_str())), // natural sort key (pinyin + zero-padded numbers)
+            name_pinyin: Some(t_utils::natural_sort_key(&file_info.file_name.to_lowercase())), // natural sort key (case-insensitive, pinyin + zero-padded numbers)
             size: file_info.file_size,
             file_type: Some(file_type),
             format_label,
