@@ -42,11 +42,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## スクリーンショット
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap ローカルフォトライブラリ管理 スクリーンショット" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap ローカルフォトライブラリ管理 スクリーンショット" width="900">
 </p>
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap ローカルAI写真検索 スクリーンショット" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap ローカルAI写真検索 スクリーンショット" width="900">
 </p>
 
 > スクリーンショット内のサンプル画像は [Wikimedia Commons](https://commons.wikimedia.org/) から提供されています。

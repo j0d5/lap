@@ -42,11 +42,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## Screenshots
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap lokaler Fotobibliotheksmanager Screenshot" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap lokaler Fotobibliotheksmanager Screenshot" width="900">
 </p>
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap lokale KI-Fotosuche Screenshot" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap lokale KI-Fotosuche Screenshot" width="900">
 </p>
 
 > Die Beispielbilder in den Screenshots stammen von [Wikimedia Commons](https://commons.wikimedia.org/).

@@ -42,11 +42,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## Capturas de tela
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Captura de tela do gerenciador de biblioteca de fotos local Lap" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Captura de tela do gerenciador de biblioteca de fotos local Lap" width="900">
 </p>
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Captura de tela da busca de fotos por IA local do Lap" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Captura de tela da busca de fotos por IA local do Lap" width="900">
 </p>
 
 > As imagens de exemplo nas capturas de tela vêm do [Wikimedia Commons](https://commons.wikimedia.org/).

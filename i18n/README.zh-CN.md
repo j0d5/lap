@@ -42,11 +42,11 @@ sudo apt install gstreamer1.0-libav gstreamer1.0-plugins-good
 ## 界面预览
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap 本地照片管理界面" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_1.png" alt="Lap 本地照片管理界面" width="900">
 </p>
 
 <p align="center">
-  <img src="../../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap 本地 AI 搜索界面" width="900">
+  <img src="../docs/public/screenshots/lap-home-0.1.10_2.png" alt="Lap 本地 AI 搜索界面" width="900">
 </p>
 
 > 截图中的示例图片来自 [Wikimedia Commons](https://commons.wikimedia.org/)。
