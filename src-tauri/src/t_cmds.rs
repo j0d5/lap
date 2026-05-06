@@ -530,7 +530,7 @@ pub async fn copy_image(file_path: String) -> Result<bool, String> {
 pub fn rename_file(file_id: i64, file_path: &str, new_name: &str) -> Option<String> {
     match t_utils::rename_file(file_path, new_name) {
         Some(new_file_path) => {
-            let name_pinyin = t_utils::convert_to_pinyin(new_name);
+            let name_pinyin = t_utils::natural_sort_key(new_name);
             if let Err(e) = AFile::update_column(file_id, "name_pinyin", &name_pinyin) {
                 eprintln!("Error while renaming file in DB: {}", e);
                 return None;

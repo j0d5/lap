@@ -585,9 +585,9 @@ export function localeComp(lang: string, str1: string, str2: string) {
 
   const locale = localeMap[lang as keyof typeof localeMap] || 'en-US';
   if (locale === 'en-US') {
-    return str1.localeCompare(str2);
+    return str1.localeCompare(str2, undefined, { numeric: true });
   } else {
-    return str1.localeCompare(str2, locale);
+    return str1.localeCompare(str2, locale, { numeric: true });
   }
 };
 

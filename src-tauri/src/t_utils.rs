@@ -271,9 +271,9 @@ impl FileNode {
 
         match sort {
             1 => nodes.sort_by(|a, b| {
-                convert_to_pinyin(&b.name)
+                natural_sort_key(&b.name)
                     .to_lowercase()
-                    .cmp(&convert_to_pinyin(&a.name).to_lowercase())
+                    .cmp(&natural_sort_key(&a.name).to_lowercase())
             }),
             2 => nodes.sort_by(|a, b| {
                 a.modified_at
@@ -288,9 +288,9 @@ impl FileNode {
                     .cmp(&a.modified_at.or(a.created_at).unwrap_or(0))
             }),
             _ => nodes.sort_by(|a, b| {
-                convert_to_pinyin(&a.name)
+                natural_sort_key(&a.name)
                     .to_lowercase()
-                    .cmp(&convert_to_pinyin(&b.name).to_lowercase())
+                    .cmp(&natural_sort_key(&b.name).to_lowercase())
             }),
         }
         Ok(nodes)
@@ -921,8 +921,8 @@ pub fn get_folder_files(
                 0 => a.taken_date.cmp(&b.taken_date), // Taken Date
                 1 => a.created_at.cmp(&b.created_at), // Created Date
                 2 => a.modified_at.cmp(&b.modified_at), // Modified Date
-                3 => convert_to_pinyin(&a.name.to_lowercase()) // name
-                    .cmp(&convert_to_pinyin(&b.name.to_lowercase())), // support pinyin
+                3 => natural_sort_key(&a.name.to_lowercase()) // name
+                    .cmp(&natural_sort_key(&b.name.to_lowercase())), // support pinyin
                 4 => a.size.cmp(&b.size),             // size
                 5 => {
                     if a.width == b.width {
@@ -1149,13 +1149,38 @@ pub fn get_file_path(path: &str, name: &str) -> String {
     file_path.to_string_lossy().to_string() // Convert PathBuf to String
 }
 
-pub fn convert_to_pinyin(s: &str) -> String {
-    s.chars()
+/// Convert to pinyin and zero-pad digit sequences for natural sort order.
+/// "Page_10" becomes "Page_0000000010", so Page_2 < Page_10.
+pub fn natural_sort_key(s: &str) -> String {
+    use std::fmt::Write;
+
+    let pinyin: String = s
+        .chars()
         .flat_map(|c| match c.to_pinyin() {
             Some(p) => p.plain().chars().collect::<Vec<_>>(),
             None => vec![c],
         })
-        .collect()
+        .collect();
+
+    let mut result = String::with_capacity(pinyin.len() + 32);
+    let mut digits = String::new();
+
+    for c in pinyin.chars() {
+        if c.is_ascii_digit() {
+            digits.push(c);
+        } else {
+            if !digits.is_empty() {
+                let _ = write!(result, "{:0>10}", digits);
+                digits.clear();
+            }
+            result.push(c);
+        }
+    }
+    if !digits.is_empty() {
+        let _ = write!(result, "{:0>10}", digits);
+    }
+
+    result
 }
 
 /// Convert a SystemTime to a i64 timestamp (in seconds since UNIX_EPOCH)

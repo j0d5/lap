@@ -913,7 +913,7 @@ impl AFile {
             folder_id,
 
             name: file_info.file_name.clone(),
-            name_pinyin: Some(t_utils::convert_to_pinyin(file_info.file_name.as_str())), // convert to pinyin
+            name_pinyin: Some(t_utils::natural_sort_key(file_info.file_name.as_str())), // natural sort key (pinyin + zero-padded numbers)
             size: file_info.file_size,
             file_type: Some(file_type),
             format_label,

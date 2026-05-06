@@ -4461,7 +4461,7 @@ const buildDuplicateGroups = (files: any[]) => {
     .filter(([, grouped]) => grouped.length > 1)
     .map(([key, grouped]) => {
       const sorted = [...grouped].sort((a, b) =>
-        String(a?.name || '').toLowerCase().localeCompare(String(b?.name || '').toLowerCase())
+        String(a?.name || '').toLowerCase().localeCompare(String(b?.name || '').toLowerCase(), undefined, { numeric: true })
       );
       const fileSize = Number(sorted[0]?.size || 0);
       return {
