@@ -118,14 +118,31 @@ impl ReverseGeocoder {
         }
     }
 
-    pub fn search(&self, loc: (f64, f64)) -> SearchResult<'_> {
+    pub fn search(&self, loc: (f64, f64)) -> Option<SearchResult<'_>> {
+        if self.tree.size() == 0 {
+            return None;
+        }
+        if loc.0.is_nan() || loc.1.is_nan() {
+            return None;
+        }
         let query = lat_lon_to_xyz(loc.0, loc.1);
-        let nearest = self
-            .tree
-            .nearest_neighbor(&query)
-            .expect("cities tree is empty");
-        SearchResult {
-            record: &self.records[nearest.idx as usize],
+        // rstar 0.12 has an internal unwrap that can panic on certain tree states;
+        // catch_unwind ensures the app survives even if the R-tree is corrupted.
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            self.tree.nearest_neighbor(&query)
+        }));
+        match result {
+            Ok(Some(nearest)) => Some(SearchResult {
+                record: &self.records[nearest.idx as usize],
+            }),
+            Ok(None) => {
+                eprintln!("Geocoder: no nearest neighbor found for ({}, {})", loc.0, loc.1);
+                None
+            }
+            Err(_) => {
+                eprintln!("Geocoder: rstar nearest_neighbor panicked for ({}, {})", loc.0, loc.1);
+                None
+            }
         }
     }
 }

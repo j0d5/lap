@@ -897,13 +897,15 @@ impl AFile {
         // Geocoding based on GPS coordinates from any source
         let (geo_name, geo_admin1, geo_admin2, geo_cc) =
             if let (Some(lat), Some(lon)) = (gps_latitude, gps_longitude) {
-                let search_result = t_utils::GEOCODER.search((lat, lon));
-                (
-                    Some(search_result.record.name.clone()),
-                    Some(search_result.record.admin1.clone()),
-                    Some(search_result.record.admin2.clone()),
-                    Some(search_result.record.cc.clone()),
-                )
+                match t_utils::GEOCODER.search((lat, lon)) {
+                    Some(result) => (
+                        Some(result.record.name.clone()),
+                        Some(result.record.admin1.clone()),
+                        Some(result.record.admin2.clone()),
+                        Some(result.record.cc.clone()),
+                    ),
+                    None => (None, None, None, None),
+                }
             } else {
                 (None, None, None, None)
             };
