@@ -126,7 +126,35 @@ async fn main() {
             let mut ai_engine = ai_state.0.lock().unwrap();
             match ai_engine.load_models(app_handle) {
                 Ok(_) => println!("AI Engine started successfully"),
-                Err(e) => eprintln!("Failed to start AI Engine: {}", e),
+                Err(e) => {
+                    eprintln!("Failed to start AI Engine: {}", e);
+                    #[cfg(target_os = "windows")]
+                    {
+                        let arch_key = if cfg!(target_arch = "aarch64") {
+                            r"HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\ARM64"
+                        } else {
+                            r"HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\X64"
+                        };
+                        let result = std::process::Command::new("reg")
+                            .args(["query", arch_key, "/v", "Installed"])
+                            .stdout(std::process::Stdio::null())
+                            .status();
+                        let installed = result.is_ok() && result.unwrap().success();
+                        if !installed {
+                            let arch = if cfg!(target_arch = "aarch64") { "arm64" } else { "x64" };
+                            let url = format!("https://aka.ms/vs/17/release/vc_redist.{}.exe", arch);
+                            let _ = std::process::Command::new("powershell")
+                                .args(["-NoProfile", "-Command", &format!(
+                                    r#"$wsh = New-Object -ComObject Wscript.Shell; $wsh.Popup('Lap requires the Microsoft Visual C++ Redistributable.`n`nA download page will open in your browser.`nPlease install it, then restart Lap.', 0, 'Lap - Missing Dependency', 0x30); Start-Process '{}'"#,
+                                    url
+                                )])
+                                .stdout(std::process::Stdio::null())
+                                .stderr(std::process::Stdio::null())
+                                .status();
+                            std::process::exit(1);
+                        }
+                    }
+                }
             }
 
             // Open devtools in development mode
