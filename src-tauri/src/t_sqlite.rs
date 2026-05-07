@@ -2423,6 +2423,10 @@ impl AThumb {
             .map(|d| d.as_secs() as i64)
     }
 
+    fn source_exists(file_path: &str) -> bool {
+        fs::metadata(file_path).is_ok()
+    }
+
     fn get_current_library_id() -> String {
         t_config::load_app_config()
             .map(|c| c.current_library_id)
@@ -2772,8 +2776,18 @@ impl AThumb {
     }
 
     fn is_stale(&self, file_path: &str, thumbnail_size: u32) -> bool {
+        if self.thumb_size != Some(thumbnail_size as i64) {
+            return true;
+        }
+
         let current_mtime = Self::get_source_mtime(file_path);
-        self.thumb_size != Some(thumbnail_size as i64) || self.thumb_mtime != current_mtime
+        match (self.thumb_mtime, current_mtime) {
+            (Some(cached_mtime), Some(source_mtime)) => cached_mtime != source_mtime,
+            (None, Some(_)) => true,
+            // The album root may have been temporarily renamed outside Lap.
+            // Keep existing thumbnails so they work again when the path returns.
+            (_, None) => false,
+        }
     }
 
     fn fetch_thumb_key(file_id: i64) -> Result<Option<String>, String> {
@@ -2972,7 +2986,15 @@ impl AThumb {
         }
 
         if let Ok(Some(thumbnail)) = Self::fetch(file_id) {
-            if thumbnail.error_code == 1 || thumbnail.error_code == 2 {
+            if thumbnail.error_code == 1 {
+                if Self::source_exists(file_path) {
+                    let _ = Self::delete(file_id);
+                    return Ok(None);
+                }
+                return Ok(Some(thumbnail));
+            }
+
+            if thumbnail.error_code == 2 {
                 return Ok(Some(thumbnail));
             }
 
@@ -3004,7 +3026,15 @@ impl AThumb {
             return Ok(None);
         }
 
-        if thumbnail.error_code == 1 || thumbnail.error_code == 2 {
+        if thumbnail.error_code == 1 {
+            if Self::source_exists(file_path) {
+                let _ = Self::delete(thumbnail.file_id);
+                return Ok(None);
+            }
+            return Ok(Some(thumbnail));
+        }
+
+        if thumbnail.error_code == 2 {
             return Ok(Some(thumbnail));
         }
 
