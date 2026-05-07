@@ -60,11 +60,41 @@
           <div class="font-semibold">
             <span>{{ selectedCount > 0 ? `${$t('toolbar.filter.select_count', { count: selectedCount.toLocaleString() })} (${formatFileSize(selectedSize)})` : $t('info_panel.select_hint') }}</span>
           </div>
-          <div>
+          <!-- <div>
             <span>{{ multiSelectTypeBreakdown }}</span>
           </div>
           <div v-if="multiSelectDateRange">
             <span>{{ multiSelectDateRange }}</span>
+          </div> -->
+        </div>
+
+        <div v-if="selectedFiles.length > 0">
+          <div class="mx-2 flex flex-wrap gap-1.5">
+            <button
+              v-for="file in visibleSelectedFiles"
+              :key="file.id"
+              class="group/thumb relative h-20 w-20 shrink-0 overflow-hidden rounded-box border border-base-content/10 bg-base-100/50"
+              :title="file.name || file.file_path"
+              @click="$emit('unselectFile', file.id)"
+            >
+              <img
+                v-if="file.thumbnail"
+                :src="file.thumbnail"
+                class="h-full w-full object-cover"
+                loading="lazy"
+              />
+              <div v-else class="h-full w-full skeleton"></div>
+              <div class="absolute inset-0 flex items-center justify-center bg-base-content/55 text-base-100 opacity-0 transition-opacity group-hover/thumb:opacity-100">
+                <IconClose class="h-4 w-4" />
+              </div>
+            </button>
+            <div
+              v-if="hiddenSelectedCount > 0"
+              class="flex h-20 w-20 shrink-0 items-center justify-center rounded-box border border-dashed border-base-content/20 bg-base-100/50 text-xs font-semibold text-base-content/60"
+              :title="$t('toolbar.filter.select_count', { count: selectedCount.toLocaleString() })"
+            >
+              +{{ hiddenSelectedCount }}
+            </div>
           </div>
         </div>
       </div>
@@ -241,10 +271,15 @@ defineEmits([
   'tagAll',
   'commentAll',
   'rotateAll',
+  'unselectFile',
 ]);
 
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
+const SELECTED_THUMBNAIL_LIMIT = 19;
+
+const visibleSelectedFiles = computed(() => props.selectedFiles.slice(0, SELECTED_THUMBNAIL_LIMIT));
+const hiddenSelectedCount = computed(() => Math.max(0, props.selectedFiles.length - SELECTED_THUMBNAIL_LIMIT));
 
 const multiSelectDateRange = computed(() => {
   if (props.selectedFiles.length === 0) return '';

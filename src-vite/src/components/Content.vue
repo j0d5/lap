@@ -405,6 +405,7 @@
             @tag-all="clickTag"
             @comment-all="openCommentEditor"
             @rotate-all="clickRotate"
+            @unselect-file="unselectFileFromSelection"
           />
           <FileInfo
             v-else
@@ -1305,6 +1306,14 @@ function handleItemSelectToggled(index: number, shiftKey: boolean = false) {
   
   // Update last selected index
   lastSelectedIndex.value = index;
+}
+
+function unselectFileFromSelection(fileId: number) {
+  const targetId = Number(fileId);
+  const file = fileList.value.find(item => Number(item?.id || 0) === targetId);
+  if (!file) return;
+  file.isSelected = false;
+  showSelectionLimitHint.value = false;
 }
 
 function handleTimelineSelectItem(index: number) {

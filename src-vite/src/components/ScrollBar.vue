@@ -2,7 +2,7 @@
   <div 
     :class="[
       'h-full flex flex-col items-end justify-center',
-      markers.length > 0 ? 'w-14' : 'w-5'
+      markers.length > 0 ? 'w-14' : 'w-4.5'
     ]"
   >
     <IconScrollUp 
