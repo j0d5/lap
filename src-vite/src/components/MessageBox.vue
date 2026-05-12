@@ -133,7 +133,9 @@ const inputErrorMessage = ref('');
 
 const okButtonClasses = computed(() => {
   return !props.showInput || !props.needValidateInput || inputValue.value.trim().length > 0
-    ? (props.warningOk ? 'hover:bg-error hover:text-base-100 cursor-pointer' : 'hover:bg-primary hover:text-primary-content cursor-pointer')
+    ? (props.warningOk
+      ? 'bg-error text-error-content hover:bg-error/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error cursor-pointer'
+      : 'bg-primary text-primary-content hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary cursor-pointer')
     : 'text-base-content/30 cursor-default';
 });
 

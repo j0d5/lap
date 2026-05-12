@@ -1255,6 +1255,7 @@ onBeforeUnmount(() => {
 function handleItemClicked(index: number, shiftKey: boolean = false) {
   if (!selectMode.value && shiftKey && selectedItemIndex.value >= 0 && selectedItemIndex.value !== index) {
     checkUnsavedChanges(() => {
+      const wasSelectMode = selectMode.value;
       selectMode.value = true;
       showQuickView.value = false;
       stopSlideShow();
@@ -1276,6 +1277,9 @@ function handleItemClicked(index: number, shiftKey: boolean = false) {
 
       selectedItemIndex.value = index;
       lastSelectedIndex.value = index;
+      if (!wasSelectMode) {
+        toast.info(localeMsg.value.info_panel.select_mode_entered);
+      }
     });
     return;
   }
@@ -4530,7 +4534,8 @@ const invertSelectionInCurrentList = async () => {
   selectMode.value = true;
 };
 
-const handleSelectMode = (value: any) => {
+const handleSelectMode = (value: any, options: { notify?: boolean } = {}) => {
+  const wasSelectMode = selectMode.value;
   selectMode.value = value;
   if(!selectMode.value) {
     showSelectionLimitHint.value = false;
@@ -4555,6 +4560,9 @@ const handleSelectMode = (value: any) => {
     showQuickView.value = false;
     stopSlideShow();
     config.rightPanel.show = false;
+    if (options.notify && !wasSelectMode) {
+      toast.info(localeMsg.value.info_panel.select_mode_entered, { placement: 'bottom-right' });
+    }
   }
 };
 

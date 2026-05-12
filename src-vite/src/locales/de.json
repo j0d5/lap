@@ -227,6 +227,7 @@
     "empty_title": "Diese Liste ist leer",
     "empty_desc": "Fügen Sie Dateien hinzu oder aktualisieren Sie den aktuellen Filter, damit hier Inhalte angezeigt werden.",
     "select_hint": "Klicken Sie auf ein Element, um es auszuwählen oder abzuwählen. Halten Sie ⇧ Umschalttaste für eine Bereichsauswahl.",
+    "select_mode_entered": "Mehrfachauswahl ist aktiviert",
     "select_limit_hint": "Alles auswählen wählt nur die ersten {count} Dateien aus.",
     "edit_disabled": "Wählen Sie ein einzelnes Bild zum Bearbeiten",
     "type_image": "Bild",

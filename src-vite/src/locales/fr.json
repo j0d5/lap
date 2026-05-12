@@ -227,6 +227,7 @@
     "empty_title": "Cette liste est vide",
     "empty_desc": "Ajoutez des fichiers ou mettez à jour le filtre actuel pour afficher des éléments ici.",
     "select_hint": "Cliquez sur un élément pour le sélectionner ou le désélectionner. Maintenez ⇧ Maj pour sélectionner une plage.",
+    "select_mode_entered": "Le mode de sélection multiple est activé",
     "select_limit_hint": "Tout sélectionner ne sélectionne que les {count} premiers fichiers.",
     "edit_disabled": "Sélectionnez une seule image pour l'éditer",
     "type_image": "Image",

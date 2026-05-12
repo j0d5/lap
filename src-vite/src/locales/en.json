@@ -227,6 +227,7 @@
     "empty_title": "This list is empty",
     "empty_desc": "Add files or update the current filter to show items here.",
     "select_hint": "Click an item to select or deselect it. Hold ⇧ Shift to select a range.",
+    "select_mode_entered": "Multi-select mode is on",
     "select_limit_hint": "Select all only selects the first {count} files.",
     "edit_disabled": "Select a single image to edit",
     "type_image": "Image",

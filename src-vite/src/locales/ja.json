@@ -227,6 +227,7 @@
     "empty_title": "このリストは空です",
     "empty_desc": "ファイルを追加するか、現在の絞り込み条件を更新してここに項目を表示してください。",
     "select_hint": "クリックで選択・解除。⇧ Shift キーを押しながら範囲選択できます。",
+    "select_mode_entered": "複数選択モードがオンになりました",
     "select_limit_hint": "全選択では先頭 {count} 件のファイルのみ選択されます。",
     "edit_disabled": "編集するには画像を1つ選択してください",
     "type_image": "枚の画像",

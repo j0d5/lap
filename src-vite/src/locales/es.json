@@ -227,6 +227,7 @@
     "empty_title": "Esta lista está vacía",
     "empty_desc": "Agrega archivos o actualiza el filtro actual para mostrar elementos aquí.",
     "select_hint": "Haz clic en un elemento para seleccionarlo o deseleccionarlo. Mantén ⇧ Shift para seleccionar un rango.",
+    "select_mode_entered": "El modo de selección múltiple está activado",
     "select_limit_hint": "Seleccionar todo solo selecciona los primeros {count} archivos.",
     "edit_disabled": "Selecciona una sola imagen para editar",
     "type_image": "Imagen",

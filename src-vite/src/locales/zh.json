@@ -227,6 +227,7 @@
     "empty_title": "当前列表为空",
     "empty_desc": "请添加文件，或更新当前筛选范围以在此显示内容。",
     "select_hint": "点击项目以选择或取消选择。按住 ⇧ Shift 键可选择范围。",
+    "select_mode_entered": "已进入多选模式",
     "select_limit_hint": "全选仅会选择前 {count} 个文件。",
     "edit_disabled": "请选择单个图片进行编辑",
     "type_image": "张图片",
