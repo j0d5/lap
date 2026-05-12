@@ -2,13 +2,20 @@
 
 ## Installation
 
-### macOS (Apple Silicon)
+### macOS with Homebrew
+
+```bash
+brew tap julyx10/lap
+brew install --cask lap
+```
+
+### macOS Manual Install (Apple Silicon)
 
 1.  Download the latest `_aarch64.dmg` file from the [Releases page](https://github.com/julyx10/lap/releases).
 2.  Open the disk image and drag **Lap** to your **Applications** folder.
 3.  Double-click to launch.
 
-### macOS (Intel)
+### macOS Manual Install (Intel)
 
 1.  Download the latest `_x64.dmg` file from the [Releases page](https://github.com/julyx10/lap/releases).
 2.  Open the disk image and drag **Lap** to your **Applications** folder.

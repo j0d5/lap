@@ -22,6 +22,15 @@ It is a privacy-focused alternative to cloud photo services: no forced upload, l
 
 ## Download Lap
 
+### macOS with Homebrew
+
+```bash
+brew tap julyx10/lap
+brew install --cask lap
+```
+
+### Manual Download
+
 Open the [latest release page](https://github.com/julyx10/lap/releases/latest), then download the file that matches your system:
 
 | Platform | Package | Status |

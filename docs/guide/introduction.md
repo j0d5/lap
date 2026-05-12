@@ -25,7 +25,7 @@ It works directly with your existing folders, keeps your library on your own dev
 Lap is currently available for macOS, Linux, and Windows.
 
 - [Download the latest release](https://github.com/julyx10/lap/releases)
-- macOS: Download the `_aarch64.dmg` or `_x64.dmg` file and drag **Lap** into **Applications**.
+- macOS: Install with Homebrew: `brew tap julyx10/lap && brew install --cask lap`, or download the `_aarch64.dmg` / `_x64.dmg` file manually.
 - Linux: Download the `_amd64.deb` package and install it with your package manager.
 - Windows: Download the `_x64_en-US.msi` or `_arm64_en-US.msi` installer and complete the setup wizard.
 - [Check out what's new in v0.2.2](/guide/release-notes/v0.2.2)
