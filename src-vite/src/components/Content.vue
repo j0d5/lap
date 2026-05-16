@@ -187,6 +187,8 @@
               <GridView ref="gridViewRef"
                 :selected-item-index="selectedItemIndex"
                 :fileList="fileList"
+                :timeline-data="timelineData"
+                :sort-type="currentQueryParams.sortType"
                 :showFolderFiles="showFolderFiles"
                 :selectMode="selectMode"
                 :content-ready="contentReady"
@@ -195,6 +197,7 @@
                 @item-dblclicked="handleItemDblClicked"
                 @item-select-toggled="handleItemSelectToggled"
                 @item-action="handleItemAction"
+                @date-group-select="handleDateGroupSelect"
                 @visible-range-update="handleVisibleRangeUpdate"
                 @scroll="handleGridScroll"
                 @layout-update="handleLayoutUpdate"
@@ -1379,6 +1382,27 @@ function handleItemSelectToggled(index: number, shiftKey: boolean = false) {
   lastSelectedIndex.value = index;
 }
 
+async function handleDateGroupSelect({ startIndex, endIndex, selected }: { startIndex: number; endIndex: number; selected: boolean }) {
+  if (!selectMode.value) return;
+  const start = Math.max(0, Math.min(Number(startIndex || 0), fileList.value.length));
+  const end = Math.max(start, Math.min(Number(endIndex || start), fileList.value.length));
+  if (start >= end) return;
+
+  const needsLoad = fileList.value.slice(start, end).some((f: any) => f?.isPlaceholder);
+  if (needsLoad) {
+    await fetchDataRange(start, end);
+  }
+
+  for (let i = start; i < end; i++) {
+    if (isRealFileItem(fileList.value[i])) {
+      fileList.value[i].isSelected = selected;
+    }
+  }
+
+  showSelectionLimitHint.value = false;
+  lastSelectedIndex.value = selected ? start : -1;
+}
+
 function unselectFileFromSelection(fileId: number) {
   const targetId = Number(fileId);
   const file = fileList.value.find(item => Number(item?.id || 0) === targetId);
@@ -1527,7 +1551,7 @@ function updateScrollPosition(currentScrollTop: number, currentScrollHeight: num
       // If provided (from event), use it. Otherwise calculate based on layout.
       let scrollHeight = currentScrollHeight;
       if (!scrollHeight) {
-         const contentHeight = (config.settings.grid.style === 2 && layoutContentHeight.value > 0) 
+         const contentHeight = layoutContentHeight.value > 0
             ? layoutContentHeight.value 
             : (totalRows * itemSize.value);
          scrollHeight = contentHeight + topPadding + bottomPadding;
@@ -1585,8 +1609,8 @@ function handleScrollUpdate(newIndex: number) {
     const topPadding = 48;
     const bottomPadding = config.settings.showStatusBar ? 32 : 4;
     
-    // Use reported layout height if available (style 2), otherwise calculate
-    const contentHeight = (config.settings.grid.style === 2 && layoutContentHeight.value > 0) 
+    // Use reported layout height when available; date headers also affect normal grid height.
+    const contentHeight = layoutContentHeight.value > 0
       ? layoutContentHeight.value 
       : (totalRows * itemSize.value);
       

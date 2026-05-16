@@ -938,6 +938,13 @@
       "justify_mode_options": [
         "等高",
         "等幅 (メイソンリー)"
+      ],
+      "date_grouping": "日付グループを表示",
+      "date_grouping_hint": "時間で並べ替えている場合のみ適用されます",
+      "date_grouping_options": [
+        "なし",
+        "日",
+        "月"
       ]
     },
     "filmstrip_view": {

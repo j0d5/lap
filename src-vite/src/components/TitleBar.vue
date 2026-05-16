@@ -11,11 +11,12 @@
   >
     <!-- Title Name -->
     <!-- Icon & Title Container -->
+    <div v-if="isMac" class="flex-1" data-tauri-drag-region></div>
     <div 
       :class="[
         'flex items-center overflow-hidden',
         showDesktopWindowControls ? 'ml-2' : '',
-        isMac ? 'm-auto pl-20 pr-4' : ''
+        isMac ? 'justify-center text-center' : ''
       ]"
       data-tauri-drag-region
     >
@@ -35,9 +36,15 @@
         {{ titlebar }}
       </span>
     </div>
+    <div v-if="isMac" class="flex-1" data-tauri-drag-region></div>
 
     <!-- Center Slot -->
-    <div class="flex-1 flex items-center justify-center" data-tauri-drag-region>
+    <div
+      :class="[
+        isMac ? 'hidden' : 'flex-1 flex items-center justify-center'
+      ]"
+      data-tauri-drag-region
+    >
       <slot></slot>
     </div>
 

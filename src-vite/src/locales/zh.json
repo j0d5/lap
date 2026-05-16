@@ -938,6 +938,13 @@
       "justify_mode_options": [
         "等高",
         "等宽 (瀑布流)"
+      ],
+      "date_grouping": "显示日期分组",
+      "date_grouping_hint": "仅在按时间排序时生效",
+      "date_grouping_options": [
+        "不显示",
+        "按日",
+        "按月"
       ]
     },
     "filmstrip_view": {

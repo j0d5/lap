@@ -131,6 +131,9 @@ listen('settings-gridLabelSecondary-changed', (event) => {
 listen('settings-justifyMode-changed', (event) => {
   config.setJustifyMode(event.payload)
 })
+listen('settings-gridDateGrouping-changed', (event) => {
+  config.setGridDateGrouping(event.payload)
+})
 listen('settings-filmStripViewPreviewPosition-changed', (event) => {
   config.setFilmStripViewPreviewPosition(event.payload)
 })

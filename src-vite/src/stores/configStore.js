@@ -115,6 +115,7 @@ export const useConfigStore = defineStore('configStore', {
         labelSecondary: 3,       // card view: secondary label (3: Dimension)
         justifyMode: 0,          // justified view mode: 0: equal height, 1: equal width (masonry)
         previewPosition: 0,      // filmstrip view: preview position (0: top, 1: bottom, 2: left, 3: right)
+        dateGrouping: 0,         // show date groups: 0: none, 1: day, 2: month
       },
       
       // image view settings
@@ -239,6 +240,9 @@ export const useConfigStore = defineStore('configStore', {
     },
     setJustifyMode(justifyMode) {
       this.settings.grid.justifyMode = justifyMode;
+    },
+    setGridDateGrouping(dateGrouping) {
+      this.settings.grid.dateGrouping = dateGrouping;
     },
     setShowFilmStrip(showFilmStrip) {
       this.settings.grid.showFilmStrip = showFilmStrip;

@@ -938,6 +938,13 @@
       "justify_mode_options": [
         "Gleiche Höhe",
         "Gleiche Breite (Masonry)"
+      ],
+      "date_grouping": "Datumsgruppen anzeigen",
+      "date_grouping_hint": "Gilt nur bei Sortierung nach Zeit",
+      "date_grouping_options": [
+        "Keine",
+        "Tag",
+        "Monat"
       ]
     },
     "filmstrip_view": {

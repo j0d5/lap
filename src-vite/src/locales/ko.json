@@ -938,6 +938,13 @@
       "justify_mode_options": [
         "높이 균등",
         "너비 균등 (메이슨리)"
+      ],
+      "date_grouping": "날짜 그룹 표시",
+      "date_grouping_hint": "시간순 정렬에서만 적용됩니다",
+      "date_grouping_options": [
+        "없음",
+        "일",
+        "월"
       ]
     },
     "filmstrip_view": {

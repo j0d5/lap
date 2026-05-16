@@ -938,6 +938,13 @@
       "justify_mode_options": [
         "По высоте",
         "По ширине (Masonry)"
+      ],
+      "date_grouping": "Показывать группы по дате",
+      "date_grouping_hint": "Применяется только при сортировке по времени",
+      "date_grouping_options": [
+        "Нет",
+        "День",
+        "Месяц"
       ]
     },
     "filmstrip_view": {

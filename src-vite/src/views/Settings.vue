@@ -208,6 +208,15 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.view.date_grouping') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.view.date_grouping_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.dateGrouping">
+                <option v-for="(option, index) in dateGroupingOptions" :key="index" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.filmstrip_view.preview_position') }}</div>
                 <!-- <div class="text-xs text-base-content/30">{{ $t('settings.filmstrip_view.preview_position_hint') }}</div> -->
               </div>
@@ -566,7 +575,7 @@ const toast = useToast();
 const appWindow = getCurrentWebviewWindow()
 let gridSizeEmitTimer: number | null = null;
 const SETTINGS_BASE_WIDTH = 600;
-const SETTINGS_BASE_HEIGHT = 600;
+const SETTINGS_BASE_HEIGHT = 620;
 const dbStorageDir = ref('');
 const isChangingDbStorage = ref(false);
 const hasCustomDbStorage = ref(false);
@@ -766,6 +775,11 @@ const justifyModeOptions = computed(() => {
     result.push({ label: options[i], value: i });
   }
   return result;
+});
+
+const dateGroupingOptions = computed(() => {
+  const options = localeMsg.value.settings.view.date_grouping_options;
+  return options.map((label: string, i: number) => ({ label, value: i }));
 });
 
 const filmStripViewPreviewPositionOptions = computed(() => {
@@ -1070,6 +1084,9 @@ watch(() => config.settings.grid.previewPosition, (newValue) => {
 });
 watch(() => config.settings.grid.justifyMode, (newValue) => {
   emit('settings-justifyMode-changed', newValue);
+});
+watch(() => config.settings.grid.dateGrouping, (newValue) => {
+  emit('settings-gridDateGrouping-changed', newValue);
 });
 
 // image viewer settings
